@@ -33,28 +33,33 @@ public class RaymarchParticleBufferEditor : Editor
         theItem.SetMaterialProps();
     }
 
+    public override void OnInspectorGUI()
+    {
+        if (GUILayout.Button("PrintDebug"))
+        {
+            theItem.PrintDebug();
+        }
+        base.DrawDefaultInspector();
+    }
+
     private void OnSceneGUI(SceneView _sceneView)
     {
+        Handles.color = Color.yellow;
+        Handles.SphereHandleCap(0, Vector3.zero, Quaternion.identity, .25f, EventType.Repaint); // world centre 
+
+
         for (int i = 0; i < theItem.particles.Count; i++)
         {
             Handles.color = Color.blue;
             Vector3 sphereCapP = HandlePos(theItem.particles[i]);
-
             Handles.SphereHandleCap(0, sphereCapP, Quaternion.identity, .25f, EventType.Repaint);
+        }
 
-            if (i > 0)
-            {
-                Handles.color = Color.cyan;
-                Vector3 prevSphereCapP = HandlePos(theItem.particles[i - 1]);
-
-                Vector3 dir = Vector3.Normalize(sphereCapP - prevSphereCapP);
-                float dist = Vector3.Distance(sphereCapP, prevSphereCapP);
-
-                Vector3 midCap = sphereCapP - dir * (dist / 2);
-                Handles.SphereHandleCap(0, midCap, Quaternion.identity, .25f, EventType.Repaint);
-
-                Handles.DrawLine(sphereCapP, sphereCapP - dir * dist);
-            }
+        for (int i = 0; i < theItem.ParticleConnections.Length; i++)
+        {
+            Handles.color = Color.cyan;
+            Vector3 sphereCapP = HandlePos(theItem.ParticleConnections[i]);
+            Handles.SphereHandleCap(0, sphereCapP, Quaternion.identity, .25f, EventType.Repaint);
         }
     }
 

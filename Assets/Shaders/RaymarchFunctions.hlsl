@@ -7,55 +7,21 @@
 
 // https://inspirnathan.com/posts/54-shadertoy-tutorial-part-8/
 
+// TODO:
+/*
+-breaks when we add another element to the list
+- has trouble working out all the bridges
+*/
+uniform float4x4 _4x4Identity;
 
-float3x3 DegreeToRadians(float degrees)
-{
-    float pi = M_PI;
-    return degrees * pi / 180.0;
-}
+uniform float4 _Particle[8];
+int _ParticleCount;
 
-float3 slerp(float3 start, float3 end, float percent)
-{
-    // Dot product - the cosine of the angle between 2 vectors.
-    float p = dot(start, end);
-    // Clamp it to be in the range of Acos()
-    // This may be unnecessary, but floating point
-    // precision can be a fickle mistress.
-    p = clamp(p, -1.0, 1.0);
-    // Acos(dot) returns the angle between start and end,
-    // And multiplying that by percent returns the angle between
-    // start and the final result.
-    float theta = acos(p) * percent;
-    float3 RelativeVec = normalize(end - start * p); // Orthonormal basis
-    // The final result.
-    return((start * cos(theta)) + (RelativeVec * sin(theta)));
-}
+uniform float4x4 _BridgeRotationMatrix[8];
+uniform float4 _BridgeData[24];
+int _BridgeCount;
 
-float3x3 rotate_x(float a)
-{
-    float sa = sin(a);
-    float ca = cos(a);
-    return float3x3(float3(1., .0, .0), float3(.0, ca, sa), float3(.0, -sa, ca));
-}
-
-float3x3 rotate_y(float a)
-{
-    float sa = sin(a);
-    float ca = cos(a);
-    return float3x3(float3(ca, .0, sa), float3(.0, 1., .0), float3(-sa, .0, ca));
-}
-
-float3x3 rotate_z(float a)
-{
-    float sa = sin(a);
-    float ca = cos(a);
-    return float3x3(float3(ca, sa, .0), float3(-sa, ca, .0), float3(.0, .0, 1.));
-}
-
-float3x3 rotate_xyz(float3x3 x, float3x3 y, float3x3 z)
-{
-    return mul(mul(x, y), z);
-}
+uniform float _UnionSmoothness;
 
 float opSmoothUnion(float d1, float d2, float k)
 {
@@ -74,11 +40,11 @@ float Sphere(float3 p, float r)
 
 }
 
-// should we be using capped cones instead where each end can scale according the scale of their corresponding sphere
-float Cylinder(float3 p, float3x3 transform, float r, float h)
+// I worked out the origin offset all by myself!! YAY!!!
+float Cylinder(float3 p, float3x3 transform, float r, float h, float3 o)
 {
     p = mul(transform, p);
-    float2 d = abs(float2(length(p.xz), p.y)) - float2(r, h);
+    float2 d = abs(float2(length(p.xz - o.xz), p.y - o.y)) - float2(r, h);
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
 }
 
@@ -98,41 +64,35 @@ float VectorAngleRadians(float3 a, float3 b)
     return acos(t);
 }
 
-uniform float4 _Particle[8];
-uniform float _UnionSmoothness;
-uniform float4x4 _BridgeRotationMatrix[8];
-uniform float4 _BridgeData[8];
-int _ParticleCount;
 
 float GetDistance(float3 p)
 {
+    if (_ParticleCount < 3) return 1;
+
     float dist = 0;
 
-    // UNITY_UNROLL
-    for (int i = 0; i < _ParticleCount; i++)
+    float spheres = Sphere(p - _Particle[0].xyz, _Particle[0].w);
+
+    float h = _BridgeData[0].w;
+    float bridges = Cylinder(p - _BridgeData[0].xyz, transpose(_BridgeRotationMatrix[0]), .025, h, float3(0, 0, 0));;
+
+    UNITY_UNROLL
+    for (int i = 1; i < _ParticleCount; i++)
     {
         float sphere = Sphere(p - _Particle[i].xyz, _Particle[i].w);
-        
-        if (i > 0)
-        {
-            // position the cylinder halfway between this sphere and the last
-            // rotate the cylinder towards our sphere
-            
-            float3 dir = _Particle[i].xyz - _Particle[i - 1].xyz;
-            float d = distance(_Particle[i].xyz, _Particle[i - 1].xyz);
-            float3 o = _Particle[i].xyz - normalize(dir) * (d / 2);
-            
-            float bridge = Cylinder(p - _BridgeData[i - 1].xyz, transpose(_BridgeRotationMatrix[i - 1]), .025, _BridgeData[i - 1].w);
+        spheres = opSmoothUnion(sphere, spheres, _UnionSmoothness);
+    }
 
-            float blend = opSmoothUnion(sphere, bridge, _UnionSmoothness);
-            dist = opSmoothUnion(blend, dist, _UnionSmoothness);
-        }
-        else
-        {
-            dist = sphere;
-        }
+    UNITY_UNROLL
+    for (int i = 1; i < _BridgeCount; i++)
+    {
+        h = _BridgeData[i].w;
+        float bridge = Cylinder(p - _BridgeData[i].xyz, transpose(_BridgeRotationMatrix[i]), .025, h, float3(0, 0, 0));
+        
+        bridges = opSmoothUnion(bridge, bridges, _UnionSmoothness);
     }
     
+    dist = opSmoothUnion(spheres, bridges, _UnionSmoothness);
     return dist;
 }
 
