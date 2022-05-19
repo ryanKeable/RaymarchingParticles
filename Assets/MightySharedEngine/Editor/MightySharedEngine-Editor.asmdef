@@ -1,0 +1,17 @@
+{
+    "name": "MightySharedEngine-Editor",
+    "references": [
+        "GUID:8770e52c78e854bdd9198eee9c2d86f8"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

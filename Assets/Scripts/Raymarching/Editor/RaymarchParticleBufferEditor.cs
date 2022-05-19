@@ -10,11 +10,6 @@ public class RaymarchParticleBufferEditor : Editor
 
     RaymarchParticleBuffer theItem;
 
-    float step = 0f;
-    float lastStep = 0f;
-
-    static double timeSinceStartUp = 0f;
-
     private void OnEnable()
     {
         theItem = target as RaymarchParticleBuffer;
@@ -30,7 +25,7 @@ public class RaymarchParticleBufferEditor : Editor
 
     public void Update()
     {
-        theItem.SetMaterialProps();
+        theItem.SetRaymarchParticleBuffer();
     }
 
     public override void OnInspectorGUI()

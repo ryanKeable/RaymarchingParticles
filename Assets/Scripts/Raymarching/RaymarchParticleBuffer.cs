@@ -5,7 +5,7 @@ using System.Linq;
 
 // TODO:
 /*
-"Property (_BridgeData) exceeds previous array size (7 vs 6). Cap to previous size. Restart Unity to recreate the arrays.
+"Property (_ConnectionData) exceeds previous array size (7 vs 6). Cap to previous size. Restart Unity to recreate the arrays.
 UnityEngine.Material:SetVectorArray (string,UnityEngine.Vector4[])"
 
  -- should we just fill the array to the max but keep the count to the particles we are actually using?
@@ -21,64 +21,109 @@ public class RaymarchParticleBuffer : MonoBehaviour
     public Material renderMat;
 
     private List<Vector4> _particleConnectionTranslationScale;
-    private List<Matrix4x4> _particleBridgeRotMatrix;
+    private List<Matrix4x4> _particleConnectionRotMatrix;
     private List<float> _distances;
 
+    private ParticleData[] _Particles;
     private int _count;
 
     public Vector4[] ParticleConnections { get => _particleConnectionTranslationScale.ToArray(); }
 
+    public struct ParticleTransformData
+    {
+        public Vector3 pos;
+        public float scale;
+    }
+
+    public struct ParticleData
+    {
+        public int id;
+        public ParticleTransformData transform;
+        public ParticleTransformData[] connections;
+    }
+
     private void Update()
     {
-        SetMaterialProps();
+        SetRaymarchParticleBuffer();
     }
 
     private void OnValidate()
     {
-        SetMaterialProps();
+        SetRaymarchParticleBuffer();
     }
 
     // this only renders correctly after a re-compile?
-    public void SetMaterialProps()
+    public void SetRaymarchParticleBuffer()
     {
         if (particles.Count < 3) return;
 
-        renderMat.SetVectorArray("_Particle", particles.ToArray());
-        renderMat.SetInt("_ParticleCount", particles.Count);
+        SetParticleData();
+        SetPerParticleConnectionData();
+        SetMaterialProps();
+    }
+
+    private void SetMaterialProps()
+    {
+        renderMat.SetVectorArray("_Particle", SetParticleDataAsVectorArray());
+        renderMat.SetInt("_ParticleCount", _Particles.Length);
         renderMat.SetFloat("_UnionSmoothness", unionSmoothness);
         renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
 
-        SetPerParticleBridgeData();
+        MDebug.LogBlue($"_particleConnectionRotMatrix {_particleConnectionRotMatrix.Count}");
+        MDebug.LogBlue($"_particleConnectionTranslationScale {_particleConnectionTranslationScale.Count}");
+        renderMat.SetMatrixArray("_ConnectionRotationMatrix", _particleConnectionRotMatrix.ToArray());
+        renderMat.SetVectorArray("_ConnectionData", _particleConnectionTranslationScale.ToArray());
+        renderMat.SetInt("_ConnectionCount", _particleConnectionTranslationScale.Count);
     }
 
-    private void SetPerParticleBridgeData()
+    private Vector4[] SetParticleDataAsVectorArray()
     {
-        _particleBridgeRotMatrix = new List<Matrix4x4>();
-        _particleConnectionTranslationScale = new List<Vector4>();
-        // need to skip over the first particle
-        for (int i = 1; i < particles.Count; i++)
+        Vector4[] pArray = new Vector4[_Particles.Length];
+        for (int i = 0; i < pArray.Length; i++)
         {
-            CalcParticleBridgeTransforms(particles.ToArray(), i);
+            pArray[i] = new Vector4(_Particles[i].transform.pos.x, _Particles[i].transform.pos.y, _Particles[i].transform.pos.z, _Particles[i].transform.scale);
         }
 
-        renderMat.SetMatrixArray("_BridgeRotationMatrix", _particleBridgeRotMatrix.ToArray());
-        renderMat.SetVectorArray("_BridgeData", _particleConnectionTranslationScale.ToArray());
-        renderMat.SetInt("_BridgeCount", _particleConnectionTranslationScale.Count);
+        return pArray;
     }
 
-    private void CalcParticleBridgeTransforms(Vector4[] particles, int index)
+    private void SetParticleData()
     {
-        Vector4[] allOtherParticles = particles.Where(p => p != particles[index]).ToArray();
+        _Particles = new ParticleData[particles.Count];
+        for (int i = 0; i < particles.Count; i++)
+        {
+            ParticleData data = new ParticleData();
+            data.transform.pos = new Vector3(particles[i].x, particles[i].y, particles[i].z);
+            data.transform.scale = particles[i].w > 0 ? particles[i].w : 0.025f; // define a default if the element is 0
+            data.id = i;
+            _Particles[i] = data;
+        }
+    }
+
+    private void SetPerParticleConnectionData()
+    {
+        _particleConnectionRotMatrix = new List<Matrix4x4>();
+        _particleConnectionTranslationScale = new List<Vector4>();
+        // need to skip over the first particle
+        for (int i = 1; i < _Particles.Length; i++)
+        {
+            CalcParticleConnectionTransforms(i);
+        }
+    }
+
+    private void CalcParticleConnectionTransforms(int index)
+    {
+        ParticleData[] allOtherParticles = _Particles.Where(p => p.id != _Particles[index].id).ToArray();
         _distances = new List<float>();
 
-        var particleQuery = allOtherParticles.OrderBy(p => Distance(p, particles[index])).ToArray();
+        var particleQuery = allOtherParticles.OrderBy(p => Distance(p.transform.pos, _Particles[index].transform.pos)).Select(p => p.transform.pos).ToArray();
         var distQuery = _distances.OrderBy(d => d).ToArray();
 
-        SetBridgeData(particles[index], particleQuery[0], distQuery[0]); // closest other particle
-        SetBridgeData(particles[index], particleQuery[1], distQuery[1]); // second closest other particle
+        SetConnectionData(particles[index], particleQuery[0], distQuery[0]); // closest other particle
+        // SetConnectionData(particles[index], particleQuery[1], distQuery[1]); // second closest other particle
     }
 
-    private float Distance(Vector4 p, Vector4 tp)
+    private float Distance(Vector3 p, Vector3 tp)
     {
         float dist = Vector3.Distance(p, tp);
         _distances.Add(dist);
@@ -90,16 +135,14 @@ public class RaymarchParticleBuffer : MonoBehaviour
     // - Track the dir in a list and compare them too (if offset and dir exist then return)
     // - pass the Vector3 a coords as the translation 
 
-    private void SetBridgeData(Vector4 particle, Vector4 targetParticle, float dist)
+    private void SetConnectionData(Vector3 a, Vector3 b, float dist)
     {
-        Vector3 a = new Vector3(particle.x, particle.y, particle.z);
-        Vector3 b = new Vector3(targetParticle.x, targetParticle.y, targetParticle.z);
         Vector3 dir = Vector3.Normalize(a - b);
 
         Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
         dist /= 2;
 
-        Vector3 offset = a - dir * dist; // use this is we want to have the bridges positioned between the spheres
+        Vector3 offset = a - dir * dist; // use this is we want to have the Connections positioned between the spheres
 
         foreach (Vector4 p in _particleConnectionTranslationScale)
         {
@@ -114,7 +157,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
         Vector4 translateAndScale = new Vector4(offset.x, offset.y, offset.z, dist);
 
 
-        _particleBridgeRotMatrix.Add(rotMatrix);
+        _particleConnectionRotMatrix.Add(rotMatrix);
         _particleConnectionTranslationScale.Add(translateAndScale);
     }
 
