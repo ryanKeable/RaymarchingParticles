@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 using System.Linq;
 
 // TODO:
@@ -18,28 +19,27 @@ public class RaymarchParticleBuffer : MonoBehaviour
 {
     public List<Vector4> particles = new List<Vector4>();
     public float unionSmoothness;
+    public float distThreshold = 0.75f;
     public Material renderMat;
+
+    private Particle[] _particles = new Particle[32];
+    private Vector4[] _particleConnections = new Vector4[32];
+    private Matrix4x4[] _particleConnectionMatrices = new Matrix4x4[32];
 
     private List<Vector4> _particleConnectionTranslationScale;
     private List<Matrix4x4> _particleConnectionRotMatrix;
     private List<float> _distances;
+    private List<int> _indices;
 
-    private ParticleData[] _Particles;
-    private int _count;
 
     public Vector4[] ParticleConnections { get => _particleConnectionTranslationScale.ToArray(); }
 
-    public struct ParticleTransformData
-    {
-        public Vector3 pos;
-        public float scale;
-    }
-
-    public struct ParticleData
+    public class Particle
     {
         public int id;
-        public ParticleTransformData transform;
-        public ParticleTransformData[] connections;
+        public Vector3 pos;
+        public float scale;
+        public List<Particle> connections;
     }
 
     private void Update()
@@ -65,23 +65,21 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private void SetMaterialProps()
     {
         renderMat.SetVectorArray("_Particle", SetParticleDataAsVectorArray());
-        renderMat.SetInt("_ParticleCount", _Particles.Length);
+        renderMat.SetInt("_ParticleCount", _particles.Length);
         renderMat.SetFloat("_UnionSmoothness", unionSmoothness);
         renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
 
-        MDebug.LogBlue($"_particleConnectionRotMatrix {_particleConnectionRotMatrix.Count}");
-        MDebug.LogBlue($"_particleConnectionTranslationScale {_particleConnectionTranslationScale.Count}");
-        renderMat.SetMatrixArray("_ConnectionRotationMatrix", _particleConnectionRotMatrix.ToArray());
-        renderMat.SetVectorArray("_ConnectionData", _particleConnectionTranslationScale.ToArray());
-        renderMat.SetInt("_ConnectionCount", _particleConnectionTranslationScale.Count);
+        renderMat.SetMatrixArray("_ConnectionRotationMatrix", _particleConnectionMatrices.ToArray());
+        renderMat.SetVectorArray("_ConnectionData", _particleConnections.ToArray());
+        renderMat.SetInt("_ConnectionCount", _particleConnections.Length);
     }
 
     private Vector4[] SetParticleDataAsVectorArray()
     {
-        Vector4[] pArray = new Vector4[_Particles.Length];
+        Vector4[] pArray = new Vector4[_particles.Length];
         for (int i = 0; i < pArray.Length; i++)
         {
-            pArray[i] = new Vector4(_Particles[i].transform.pos.x, _Particles[i].transform.pos.y, _Particles[i].transform.pos.z, _Particles[i].transform.scale);
+            pArray[i] = new Vector4(_particles[i].pos.x, _particles[i].pos.y, _particles[i].pos.z, _particles[i].scale);
         }
 
         return pArray;
@@ -89,14 +87,15 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void SetParticleData()
     {
-        _Particles = new ParticleData[particles.Count];
+        _particles = new Particle[particles.Count];
         for (int i = 0; i < particles.Count; i++)
         {
-            ParticleData data = new ParticleData();
-            data.transform.pos = new Vector3(particles[i].x, particles[i].y, particles[i].z);
-            data.transform.scale = particles[i].w > 0 ? particles[i].w : 0.025f; // define a default if the element is 0
+            Particle data = new Particle();
+            data.pos = new Vector3(particles[i].x, particles[i].y, particles[i].z);
+            data.scale = particles[i].w > 0 ? particles[i].w : 0.025f; // define a default if the element is 0
             data.id = i;
-            _Particles[i] = data;
+            data.connections = new List<Particle>();
+            _particles[i] = data;
         }
     }
 
@@ -104,37 +103,72 @@ public class RaymarchParticleBuffer : MonoBehaviour
     {
         _particleConnectionRotMatrix = new List<Matrix4x4>();
         _particleConnectionTranslationScale = new List<Vector4>();
-        // need to skip over the first particle
-        for (int i = 1; i < _Particles.Length; i++)
+
+        for (int i = 0; i < _particles.Length; i++)
         {
-            CalcParticleConnectionTransforms(i);
+            CalcParticleConnectionTransforms(_particles[i]);
+        }
+
+        for (int i = 0; i < _particleConnectionTranslationScale.Count; i++)
+        {
+            _particleConnections[i] = _particleConnectionTranslationScale[i];
+            _particleConnectionMatrices[i] = _particleConnectionRotMatrix[i];
+
         }
     }
 
-    private void CalcParticleConnectionTransforms(int index)
+    // there will be some issues with this when we start to ignore points greater than a distance
+    // if those connections had existed, they will need to be removed in a different function
+    // our indexing will probably break too
+    private void CalcParticleConnectionTransforms(Particle particle)
     {
-        ParticleData[] allOtherParticles = _Particles.Where(p => p.id != _Particles[index].id).ToArray();
+        // all other particles needs to include those we are also already connected to
+        // we need to gather all the connecting particle ids and check them against our search p id
+        int[] idsToIgnore = (int[])particle.connections.Select(p => p.id).Append(particle.id).ToArray();
+
+        Particle[] allOtherParticles = _particles.Where(p => !idsToIgnore.Contains(p.id)).ToArray(); // only gather particles who ID is not contained in IDs to ignore
+
         _distances = new List<float>();
 
-        var particleQuery = allOtherParticles.OrderBy(p => Distance(p.transform.pos, _Particles[index].transform.pos)).Select(p => p.transform.pos).ToArray();
-        var distQuery = _distances.OrderBy(d => d).ToArray();
+        // gather close particles within the dist threshold --  < dist threshold is clamping the distance >.<
+        Particle[] closeParticlesQuery = (Particle[])allOtherParticles.OrderBy(p => Distance(p.pos, particle.pos)).ToArray();
+        float[] distQuery = (float[])_distances.OrderBy(d => d).ToArray();
 
-        SetConnectionData(particles[index], particleQuery[0], distQuery[0]); // closest other particle
-        // SetConnectionData(particles[index], particleQuery[1], distQuery[1]); // second closest other particle
+        AddParticleToConnections(particle, closeParticlesQuery[0]);
+        // if (particle.connections.Count > 0 && !particle.connections.Contains(closeParticlesQuery[0])) particle.connections.Add(closeParticlesQuery[0]); // here we the connecting particle to our particle's connecting list
+
+        int closestParticleIndex = Array.IndexOf(_particles, closeParticlesQuery[0]);
+        AddParticleToConnections(_particles[closestParticleIndex], particle);
+
+        int secondClosestParticleIndex = Array.IndexOf(_particles, closeParticlesQuery[1]);
+        AddParticleToConnections(_particles[secondClosestParticleIndex], particle);
+
+
+        // if (distQuery.Length == 0) return; // if no distances are close enough than ignore!
+        SetConnectionData(particle.pos, closeParticlesQuery[0].pos, distQuery[0]); // closest other particle
+        SetConnectionData(particle.pos, closeParticlesQuery[1].pos, distQuery[1]); // second closest other particle
     }
+
 
     private float Distance(Vector3 p, Vector3 tp)
     {
         float dist = Vector3.Distance(p, tp);
+        // if (dist > distThreshold) return Mathf.Infinity;
         _distances.Add(dist);
         return dist;
+    }
+
+    private void AddParticleToConnections(Particle thisP, Particle pToAdd)
+    {
+        if (thisP.connections.Count > 0 && !thisP.connections.Contains(pToAdd))
+            thisP.connections.Add(pToAdd); // here we the connecting particle to our particle's connecting list
+
     }
 
     // if I want to use cylinders where the origin is at the sphere i need to:
     // - Flip the dir
     // - Track the dir in a list and compare them too (if offset and dir exist then return)
     // - pass the Vector3 a coords as the translation 
-
     private void SetConnectionData(Vector3 a, Vector3 b, float dist)
     {
         Vector3 dir = Vector3.Normalize(a - b);

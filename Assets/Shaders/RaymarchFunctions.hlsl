@@ -10,16 +10,16 @@
 // TODO:
 /*
 -breaks when we add another element to the list
-- has trouble working out all the bridges
+- has trouble working out all the Connections
 */
 uniform float4x4 _4x4Identity;
+uniform float4x4 _ConnectionRotationMatrix[32];
 
-uniform float4 _Particle[8];
+uniform float4 _Particle[32];
+uniform float4 _ConnectionData[32];
+
 int _ParticleCount;
-
-uniform float4x4 _BridgeRotationMatrix[8];
-uniform float4 _BridgeData[24];
-int _BridgeCount;
+int _ConnectionCount;
 
 uniform float _UnionSmoothness;
 
@@ -73,8 +73,8 @@ float GetDistance(float3 p)
 
     float spheres = Sphere(p - _Particle[0].xyz, _Particle[0].w);
 
-    float h = _BridgeData[0].w;
-    float bridges = Cylinder(p - _BridgeData[0].xyz, transpose(_BridgeRotationMatrix[0]), .025, h, float3(0, 0, 0));;
+    float h = _ConnectionData[0].w;
+    float Connections = Cylinder(p - _ConnectionData[0].xyz, transpose(_ConnectionRotationMatrix[0]), .025, h, float3(0, 0, 0));;
 
     UNITY_UNROLL
     for (int i = 1; i < _ParticleCount; i++)
@@ -84,15 +84,15 @@ float GetDistance(float3 p)
     }
 
     UNITY_UNROLL
-    for (int i = 1; i < _BridgeCount; i++)
+    for (int i = 1; i < _ConnectionCount; i++)
     {
-        h = _BridgeData[i].w;
-        float bridge = Cylinder(p - _BridgeData[i].xyz, transpose(_BridgeRotationMatrix[i]), .025, h, float3(0, 0, 0));
+        h = _ConnectionData[i].w;
+        float Connection = Cylinder(p - _ConnectionData[i].xyz, transpose(_ConnectionRotationMatrix[i]), .025, h, float3(0, 0, 0));
         
-        bridges = opSmoothUnion(bridge, bridges, _UnionSmoothness);
+        Connections = opSmoothUnion(Connection, Connections, _UnionSmoothness);
     }
     
-    dist = opSmoothUnion(spheres, bridges, _UnionSmoothness);
+    dist = opSmoothUnion(spheres, Connections, _UnionSmoothness);
     return dist;
 }
 
