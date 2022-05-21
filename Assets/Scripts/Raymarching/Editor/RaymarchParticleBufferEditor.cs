@@ -58,7 +58,7 @@ public class RaymarchParticleBufferEditor : Editor
         }
     }
 
-    private Vector3 HandlePos(Vector4 _point)
+    private Vector3 HandlePos(Vector3 _point)
     {
         Transform trans = theItem.transform;
         Vector3 renderP = new Vector3(_point.x * trans.localScale.x, _point.y * trans.localScale.y, _point.z * trans.localScale.z);

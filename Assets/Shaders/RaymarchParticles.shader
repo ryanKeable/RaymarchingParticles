@@ -52,7 +52,7 @@ Shader "Raymarch/RaymarchParticles"
                 output.positionCS = vertexInput.positionCS;
                 output.positionWS = vertexInput.positionWS;
 
-                output.rayOrigin = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1));
+                output.rayOrigin = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos.xyz, 1)).xyz;
                 output.positionOS = input.positionOS.xyz;
 
                 return output;

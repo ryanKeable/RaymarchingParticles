@@ -16,10 +16,11 @@ uniform float4x4 _4x4Identity;
 uniform float4x4 _ConnectionRotationMatrix[32];
 
 uniform float4 _Particle[32];
-uniform float4 _ConnectionData[32];
+uniform float3 _ConnectionPos[32];
+uniform float2 _ConnectionScale[32];
 
-int _ParticleCount;
-int _ConnectionCount;
+int _ParticleCount = 0;
+int _ConnectionCount = 0;
 
 uniform float _UnionSmoothness;
 
@@ -73,8 +74,8 @@ float GetDistance(float3 p)
 
     float spheres = Sphere(p - _Particle[0].xyz, _Particle[0].w);
 
-    float h = _ConnectionData[0].w;
-    float Connections = Cylinder(p - _ConnectionData[0].xyz, transpose(_ConnectionRotationMatrix[0]), .025, h, float3(0, 0, 0));;
+    float h = _ConnectionScale[0].y;
+    float connections = Cylinder(p - _ConnectionPos[0].xyz, transpose(_ConnectionRotationMatrix[0]), _ConnectionScale[0].x, h, float3(0, h, 0));
 
     UNITY_UNROLL
     for (int i = 1; i < _ParticleCount; i++)
@@ -84,15 +85,16 @@ float GetDistance(float3 p)
     }
 
     UNITY_UNROLL
-    for (int i = 1; i < _ConnectionCount; i++)
+    for (int j = 1; j < _ConnectionCount; j++)
     {
-        h = _ConnectionData[i].w;
-        float Connection = Cylinder(p - _ConnectionData[i].xyz, transpose(_ConnectionRotationMatrix[i]), .025, h, float3(0, 0, 0));
+
+        float h = _ConnectionScale[j].y;
+        float connection = Cylinder(p - _ConnectionPos[j].xyz, transpose(_ConnectionRotationMatrix[j]), _ConnectionScale[j].x, h, float3(0, h, 0));
         
-        Connections = opSmoothUnion(Connection, Connections, _UnionSmoothness);
+        connections = opSmoothUnion(connection, connections, _UnionSmoothness);
     }
     
-    dist = opSmoothUnion(spheres, Connections, _UnionSmoothness);
+    dist = opSmoothUnion(spheres, connections, _UnionSmoothness);
     return dist;
 }
 
