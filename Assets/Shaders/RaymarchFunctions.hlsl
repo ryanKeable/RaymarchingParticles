@@ -17,12 +17,17 @@ uniform float4x4 _ConnectionRotationMatrix[32];
 
 uniform float4 _Particle[32];
 uniform float3 _ConnectionPos[32];
-uniform float2 _ConnectionScale[32];
+uniform float3 _ConnectionScale[32];
 
 int _ParticleCount = 0;
 int _ConnectionCount = 0;
 
 uniform float _UnionSmoothness;
+
+float dot2(float2 v)
+{
+    return dot(v, v);
+}
 
 float opSmoothUnion(float d1, float d2, float k)
 {
@@ -39,6 +44,18 @@ float Sphere(float3 p, float r)
 {
     return length(p) - r; // sphere
 
+}
+
+float CappedCone(float3 p, float3x3 transform, float h, float r1, float r2, float3 o)
+{
+    p = mul(transform, p);
+    float2 q = float2(length(p.xz - o.xz), p.y - o.y);
+    float2 k1 = float2(r2, h);
+    float2 k2 = float2(r2 - r1, 2.0 * h);
+    float2 ca = float2(q.x - min(q.x, (q.y < 0.0)?r1 : r2), abs(q.y) - h);
+    float2 cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot2(k2), 0.0, 1.0);
+    float s = (cb.x < 0.0 && ca.y < 0.0) ? - 1.0 : 1.0;
+    return s * sqrt(min(dot2(ca), dot2(cb)));
 }
 
 // I worked out the origin offset all by myself!! YAY!!!
@@ -74,8 +91,10 @@ float GetDistance(float3 p)
 
     float spheres = Sphere(p - _Particle[0].xyz, _Particle[0].w);
 
-    float h = _ConnectionScale[0].y;
-    float connections = Cylinder(p - _ConnectionPos[0].xyz, transpose(_ConnectionRotationMatrix[0]), _ConnectionScale[0].x, h, float3(0, h, 0));
+    float h = _ConnectionScale[0].x;
+    float r1 = _ConnectionScale[0].y;
+    float r2 = _ConnectionScale[0].z;
+    float connections = CappedCone(p - _ConnectionPos[0].xyz, transpose(_ConnectionRotationMatrix[0]), h, r1, r2, float3(0, h, 0));
 
     UNITY_UNROLL
     for (int i = 1; i < _ParticleCount; i++)
@@ -84,22 +103,28 @@ float GetDistance(float3 p)
         spheres = opSmoothUnion(sphere, spheres, _UnionSmoothness);
     }
 
-    UNITY_UNROLL
-    for (int j = 1; j < _ConnectionCount; j++)
-    {
+    dist = spheres;
 
-        float h = _ConnectionScale[j].y;
-        float connection = Cylinder(p - _ConnectionPos[j].xyz, transpose(_ConnectionRotationMatrix[j]), _ConnectionScale[j].x, h, float3(0, h, 0));
-        
-        connections = opSmoothUnion(connection, connections, _UnionSmoothness);
-    }
+    // UNITY_UNROLL
+    // for (int j = 1; j < _ConnectionCount; j++)
+    // {
+
+    //     float h = _ConnectionScale[j].x;
+    //     float r1 = _ConnectionScale[j].y;
+    //     float r2 = _ConnectionScale[j].z;
+    //     float connection = CappedCone(p - _ConnectionPos[j].xyz, transpose(_ConnectionRotationMatrix[j]), h, r1, r2, float3(0, h, 0));
     
-    dist = opSmoothUnion(spheres, connections, _UnionSmoothness);
+    //     connections = opSmoothUnion(connection, connections, _UnionSmoothness);
+    // }
+    
+    // dist = opSmoothUnion(spheres, connections, _UnionSmoothness) / 2; // this division is causing some errors around the visual edges
+
+    
     return dist;
 }
 
-float3 GetNormal(float3 pos) // constructred normal
-
+// constructred normal
+float3 GetNormal(float3 pos)
 {
     float2 epsilon = float2(1e-2, 0);
 

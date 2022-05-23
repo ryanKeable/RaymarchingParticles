@@ -1,176 +1,104 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.EditorCoroutines.Editor;
 using System;
 using System.Linq;
 // using Editor.c
 
-// [System.Serializable]
+[System.Serializable]
 public class ParticleNode
 {
     public int id;
+
+    public ParticleSystem.Particle particle;
+
     public Vector3 pos;
     public float scale;
+    public float lifetime;
+    private List<float> distances;
+    private ParticleSystem system;
+    private float distThreshold;
+    const int maxConnections = 2;
 
-    private List<ParticleNodeConnection> connections = new List<ParticleNodeConnection>();
-    private List<ParticleNodeConnection> existingConnectionsOtherThanMine;
-    private RaymarchParticleBuffer buffer;
-
-    const int maxConnections = 3;
-
-    public ParticleNode(RaymarchParticleBuffer _buffer)
-    {
-        connections = new List<ParticleNodeConnection>();
-        buffer = _buffer;
-    }
-
-    public void UpdateParticleNode(int _id, Vector3 _pos, float _scale)
+    public ParticleNode(int _id, ParticleSystem.Particle _particle, ParticleSystem _system, float _distThreshold)
     {
         id = _id;
-        pos = _pos;
-        scale = _scale;
+        particle = _particle;
+        distThreshold = _distThreshold;
+        system = _system;
     }
 
-    // there will be some issues with this when we start to ignore points greater than a distance
-    // if those connections had existed, they will need to be removed in a different function
-    // our indexing will probably break too
-    public void CalcParticleConnectionTransforms(ParticleNode[] _particleNodes)
+    public void UpdateParticleNode(Transform t)
     {
-        /*
-            - on every update:
-            - we want to find the other particles that are the CLOSEST to this one
-            - once found, establish a connection
-            - if that connection exists via another node, ignore it -- this is next!
-            - track that connection
-            - if that connection exists and is still the closest, update it
-            - if that connection breaks (no longer the closest), remove it 
+        MDebug.LogBlue($" pos {particle.position}");
+        pos = t.InverseTransformPoint(particle.position);
+        scale = particle.GetCurrentSize(system) / t.localScale.x;
+        lifetime = particle.remainingLifetime;
+    }
 
-            - trim close particle query??
-            - checking distance against so many other nodes is crazy, also looking through all their connection data for other nodes will get insane 
-        */
+    public void FindCloseConnections(ParticleNode[] _particleNodes, ParticleNodeConnection[] _particleNodeConnections, out List<ParticleNodeConnection> newConnections)
+    {
+        newConnections = new List<ParticleNodeConnection>();
+        List<ParticleNode> closeParticles = FindCloseParticles(_particleNodes);
+        if (closeParticles.Count == 0) return;
 
+
+        CheckToAddConnections(closeParticles.ToArray(), _particleNodeConnections, out newConnections);
+    }
+
+    private List<ParticleNode> FindCloseParticles(ParticleNode[] _particleNodes)
+    {
         ParticleNode[] allOtherParticles = _particleNodes.Where(p => p.id != id).ToArray(); // only gather particles who ID is not contained in IDs to ignore
-        SetConnectionsOtherThanMine(allOtherParticles);
         // gather close particles within the dist threshold --  < dist threshold is clamping the distance >.<
-        List<ParticleNode> closeParticlesQuery = allOtherParticles.Where(p => Vector3.Distance(p.pos, pos) < buffer.distThreshold).ToList();
-        closeParticlesQuery.OrderBy(p => Vector3.Distance(p.pos, pos));
 
+        distances = new List<float>();
+        List<ParticleNode> closeParticlesQuery = allOtherParticles.Where(p => CheckDistance(p.particle.position, particle.position)).ToList();
+        closeParticlesQuery.OrderBy(p => distances);
 
-        CheckToRemoveConnections(closeParticlesQuery.ToArray());
+        if (closeParticlesQuery.Count > maxConnections) closeParticlesQuery.RemoveRange(maxConnections, closeParticlesQuery.Count - maxConnections);
 
-        if (closeParticlesQuery.Count == 0) return;
-        CheckToAddConnections(closeParticlesQuery.ToArray());
-        UpdateConnections();
+        return closeParticlesQuery;
     }
 
-    private void SetConnectionsOtherThanMine(ParticleNode[] _otherParticleNodes)
+    private void CheckToAddConnections(ParticleNode[] _closeNodes, ParticleNodeConnection[] _connections, out List<ParticleNodeConnection> _newConnections)
     {
-        existingConnectionsOtherThanMine = new List<ParticleNodeConnection>();
+        _newConnections = new List<ParticleNodeConnection>();
 
-        foreach (ParticleNode n in _otherParticleNodes)
-        {
-            if (n.connections.Count > 0) existingConnectionsOtherThanMine.AddRange(n.connections);
-        }
-    }
-
-
-    // Look at all our connections
-    // for each connection, does it contain the current set of close nodes?
-    // is the connection managed by this node?
-    // if not, this connection should be severed 
-    private void CheckToRemoveConnections(ParticleNode[] _closeNodes)
-    {
-        if (connections.Count == 0) return;
-
-        foreach (ParticleNodeConnection c in connections)
-        {
-            for (int i = 0; i < _closeNodes.Length; i++)
-            {
-                bool hasNode = c.nodes.Contains(_closeNodes[i]); // do we 
-                if (!hasNode && !CheckForExistingConnections(_closeNodes[i]))
-                {
-                    MDebug.LogPink($"Node {id} Remove a connection from {c.nodes[0].id} to {c.nodes[1].id} because it does not contain {_closeNodes[i].id}");
-                    RemoveConnection(c); // what if the connections has any other i??
-                }
-            }
-
-        }
-    }
-
-    private void CheckToAddConnections(ParticleNode[] _closeNodes)
-    {
         for (int i = 0; i < _closeNodes.Length; i++)
         {
-            // do any of our current nodes contain the close node at i?
-            bool hasNode = false;
-            if (connections.Count > 0)
+            bool connectionExists = false;
+            for (int j = 0; j < _connections.Length; j++)
             {
-                foreach (ParticleNodeConnection c in connections)
+                if (_connections[j].id == ConnectionId(id, _closeNodes[i].id))
                 {
-                    if (c.nodes[0].id == _closeNodes[i].id || c.nodes[1].id == _closeNodes[i].id) hasNode = true;
+                    connectionExists = true;
                 }
             }
 
-            if (connections.Count == 0 || !hasNode)
+            if (!connectionExists)
             {
-                MDebug.LogPurple($"Node {id} Add a new connection from {id} to {_closeNodes[i].id}");
-                if (connections.Count < maxConnections)
-                {
-                    if (!CheckForExistingConnections(_closeNodes[i])) AddNewConnection(id, _closeNodes[i]); // if connection doesnt exist, add it
-                }
+                _newConnections.Add(AddNewConnection(_closeNodes[i]));
             }
         }
     }
 
-    private void UpdateConnections()
+    private ParticleNodeConnection AddNewConnection(ParticleNode _p)
     {
-        foreach (ParticleNodeConnection c in connections)
-        {
-            c.UpdateParticleNodeConnection();
-        }
+        int connectionId = ConnectionId(id, _p.id);
+        return new ParticleNodeConnection(connectionId, this, _p);
     }
 
-    // revisit this so we can correctly identify established connections
-    private bool CheckForExistingConnections(ParticleNode _nodeToCheck)
+    private int ConnectionId(int a, int b)
     {
-        bool query = false;
-        foreach (ParticleNodeConnection c in existingConnectionsOtherThanMine)
-        {
-            query = c.nodes.Contains(_nodeToCheck) && c.nodes.Contains(this);
-        }
-
-        return query;
+        return a + b;
     }
 
-    private void AddNewConnection(int _id, ParticleNode _p)
+    private bool CheckDistance(Vector3 p, Vector3 tp)
     {
-        id = _id;
-        ParticleNodeConnection newConnection = new ParticleNodeConnection(buffer, this, _p);
-        connections.Add(newConnection); // if connection doesnt exist, add it
-        // _p.AddOtherConnection(newConnection); // do we need to do this?
-        buffer.AddToConnections(newConnection);
+        float dist = Vector3.Distance(p, tp);
+        distances.Add(dist);
+        return dist < distThreshold;
     }
-
-    public void AddOtherConnection(ParticleNodeConnection _otherConnection)
-    {
-        connections.Add(_otherConnection);
-    }
-
-    private void RemoveConnection(ParticleNodeConnection brokenConnection)
-    {
-        connections.Remove(brokenConnection); // if connection doesnt exist, add it
-        buffer.RemoveFromConnections(brokenConnection);
-        brokenConnection.RemoveConnection();
-    }
-
-    // private float Distance(Vector3 p, Vector3 tp)
-    // {
-    //     float dist = Vector3.Distance(p, tp);
-    //     if (dist > buffer.distThreshold) dist = Mathf.Infinity;
-    //     distances.Add(dist);
-    //     return dist;
-    // }
 }
 
 [System.Serializable]
@@ -179,104 +107,72 @@ public class ParticleNodeConnection
     public int id;
     public List<ParticleNode> nodes = new List<ParticleNode>();
     public Matrix4x4 rotMatrix;
-    public Vector2 currentScale;
+    public Vector3 currentScale;
     public Vector3 pos;
 
     private float length;
-    private float scale; // might end upbeing a Vector2?
-    private bool scaling;
-    private RaymarchParticleBuffer buffer;
+    private float growth;
+    private float r1; // might end upbeing a Vector2?
+    private float r2; // might end upbeing a Vector2?
 
 
     // if I want to use cylinders where the origin is at the sphere i need to:
     // - Flip the dir
     // - Track the dir in a list and compare them too (if offset and dir exist then return)
     // - pass the Vector3 a coords as the translation 
-    public ParticleNodeConnection(RaymarchParticleBuffer _buffer, ParticleNode a, ParticleNode b)
+    public ParticleNodeConnection(int _id, ParticleNode _a, ParticleNode _b)
     {
-        MDebug.LogWhite($"ParticleNodeConnection created from {a.id} to {b.id}");
-        id = a.id;
-        nodes.Add(a);
-        nodes.Add(b);
-        buffer = _buffer;
-
-#if !UNITY_EDITOR
-        buffer.StartCoroutine(
-                        doStandardLerp(buffer.connectionAnimationTime, (float lerp) => { GrowConnection(lerp); }, ()=> {scaling = false}, buffer.connectionAnimationShape)
-            );
-#endif
+        id = _id;
+        nodes.Add(_a);
+        nodes.Add(_b);
     }
 
-    public void UpdateParticleNodeConnection()
+    public ParticleNodeConnection UpdateParticleNodeConnection(float _growthValue, float _distThreshold, float _minCapScale)
     {
+
+
         Vector3 dir = Vector3.Normalize(nodes[1].pos - nodes[0].pos);
         float dist = Vector3.Distance(nodes[0].pos, nodes[1].pos);
 
-        Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
+        // half the distance so our length is correct
         dist /= 2;
+        _distThreshold /= 2;
+
+        Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
 
         Vector3 offset = nodes[0].pos - dir * dist; // use this is we want to have the Connections positioned between the spheres
 
         rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
         pos = nodes[0].pos; // offset
-        length = dist;
-        scale = nodes[0].scale / 2;
 
-        if (!scaling) currentScale = new Vector2(scale, length);
-    }
+        float targetR1 = nodes[0].scale * 0.75f;
+        float targetR2 = nodes[1].scale * 0.75f;
 
-    public void RemoveConnection()
-    {
-        MDebug.LogPurple($"REMOVE CONNECTION");
-
-#if UNITY_EDITOR
-        currentScale = new Vector2(0, 0);
-#else
-        buffer.StartCoroutine(
-            doStandardLerp(buffer.connectionAnimationTime, (float lerp) => { ShrinkConnection(lerp); }, RemoveConnectionCompletion, buffer.connectionAnimationShape)
-        );
-#endif
-    }
-
-    public void GrowConnection(float lerp)
-    {
-        scaling = true;
-        float _scale = Mathf.Lerp(0, scale, lerp);
-        float _legnth = Mathf.Lerp(0, length, lerp);
-        currentScale = new Vector2(_scale, _legnth);
-    }
-
-    public void ShrinkConnection(float lerp)
-    {
-        scaling = true;
-        float _scale = Mathf.Lerp(scale, 0, lerp);
-        float _legnth = Mathf.Lerp(length, 0, lerp);
-        currentScale = new Vector2(_scale, _legnth);
-    }
-
-    public void RemoveConnectionCompletion()
-    {
-        scaling = false;
-    }
-
-    static IEnumerator doStandardLerp(float time, Action<float> lerpAction, Action completion, AnimationCurve shape)
-    {
-        if (time == 0f)
+        if (dist > _distThreshold)
         {
-            lerpAction(shape.Evaluate(1.0f));
-            if (completion != null) completion();
-            yield break;
+            _growthValue = -_growthValue; // flip when we need to remove
+            targetR2 = _minCapScale;
         }
-        float fStartTime = Time.time;
-        float fLerpLength = time;
-        float fCurrLerp = (Time.time - fStartTime) / fLerpLength;
+        float targetDist = Mathf.Min(dist, _distThreshold);
 
-        while (fCurrLerp <= 1.0f)
-        {
-            fCurrLerp = (Time.time - fStartTime) / fLerpLength;
-            lerpAction(shape.Evaluate(fCurrLerp));
-            yield return null;
-        }
-        if (completion != null) completion();
+        ScaleOverTime(_growthValue, targetDist, targetR1, targetR2);
+
+        if (length <= 0) // when we completely shrink, remove this
+            return this;
+
+        return null;
+    }
+
+    public void ScaleOverTime(float _growthValue, float _dist, float _r1, float _r2)
+    {
+        // give us a value that is between 0 and 1
+        growth = Mathf.Clamp01(growth);
+        growth += _growthValue;
+
+        length = Mathf.SmoothStep(0, _dist, growth);
+        r1 = Mathf.SmoothStep(0, _r1, growth);
+        r2 = Mathf.SmoothStep(0, _r2, growth);
+
+        currentScale = new Vector3(length, r1, r2);
     }
 }
