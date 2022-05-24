@@ -12,13 +12,12 @@ public static class ParticleSDFUtils
     private static List<float> _distances;
     private static ParticleSystem.Particle[] _particles;
 
-    const int maxConnections = 2;
+    const int maxConnections = 1;
 
     public static void AllocateResources(ParticleSystem _particeSystem, Transform _localTransform, int maxParticleSize)
     {
         _system = _particeSystem;
         _transform = _localTransform;
-        // _particles = new ParticleSystem.Particle[maxParticleSize];
     }
 
     public static void FindCloseConnections(ParticleSystem.Particle[] _particleArray, ParticleSystem.Particle _thisParticle, ParticleNodeConnection[] _particleNodeConnections, float _distThrehold, out List<ParticleNodeConnection> newConnections)
@@ -73,7 +72,7 @@ public static class ParticleSDFUtils
     private static int ConnectionId(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle)
     {
         uint combination = _thisParticle.randomSeed + _targetParticle.randomSeed;
-        return RandomUtilities.SeededRandomRange((int)combination, 0, 10000);
+        return (int)combination;
     }
 
     private static bool CheckParticleMatch(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle)
@@ -84,7 +83,7 @@ public static class ParticleSDFUtils
 
     private static bool CheckActiveAndDistance(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle, float _distThrehold)
     {
-        float dist = Vector3.Distance(_thisParticle.position, _targetParticle.position);
+        float dist = Vector3.Distance(ParticlePostionToWorld(_thisParticle), ParticlePostionToWorld(_targetParticle));
         _distances.Add(dist);
         return dist < _distThrehold;
     }
@@ -133,6 +132,8 @@ public class ParticleNodeConnection
     public float[] particleScales = new float[2];
     public float[] particleLife = new float[2];
 
+    public float currentLengthPercentage;
+
     private uint startSeed;
     private uint endSeed;
     private Vector3 lastKnownStartPos;
@@ -147,8 +148,8 @@ public class ParticleNodeConnection
 
     // if I want to use cylinders where the origin is at the sphere i need to:
     /*
-     - still need to fix some snapping
-     - when a particle dies, we also need to reduce the length of the connection (can't just kill it)
+    - the collection of connections is getting cleared to 0
+    - the connections IDs are swapping
      - also need to manage the extra scale thats applied to the sdf union when a connection is introduced
     */
     public ParticleNodeConnection(int _id, uint _start, uint _end)
@@ -171,7 +172,7 @@ public class ParticleNodeConnection
         else
         {
             positions[0] = lastKnownStartPos;
-            particleScales[0] = 0;
+            particleScales[0] = _minCapScale;
             particleLife[0] = 0;
         }
 
@@ -186,7 +187,7 @@ public class ParticleNodeConnection
         else
         {
             positions[1] = lastKnownEndPos;
-            particleScales[1] = 0;
+            particleScales[1] = _minCapScale;
             particleLife[1] = 0;
         }
 
@@ -204,17 +205,20 @@ public class ParticleNodeConnection
 
         rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
 
-        float targetR1 = particleScales[0] * 0.5f;
-        float targetR2 = particleScales[1] * 0.5f;
 
-        if (dist > _distThreshold)
+
+        if (dist > _distThreshold || particleScales[0] <= _minCapScale || particleScales[1] <= _minCapScale)
         {
             _growthValue = -_growthValue; // flip when we need to remove
-            targetR2 = _minCapScale;
         }
+
         float targetDist = Mathf.Min(dist, _distThreshold);
 
-        ScaleOverTime(_growthValue, targetDist, targetR1, targetR2);
+        ScaleLengthOnUpdate(_growthValue, targetDist);
+
+        currentLengthPercentage = length / dist;
+        float targetR1 = particleScales[0] * (currentLengthPercentage) * 0.75f;
+        float targetR2 = particleScales[1] * (currentLengthPercentage) * 0.75f;
         currentScale = new Vector3(length, targetR1, targetR2);
 
         if (length <= 0.001f) // when we completely shrink, remove this
@@ -233,7 +237,7 @@ public class ParticleNodeConnection
         return null;
     }
 
-    public void ScaleOverTime(float _growthValue, float _dist, float _r1, float _r2)
+    public void ScaleLengthOnUpdate(float _growthValue, float _dist)
     {
         // give us a value that is between 0 and 1
         growth = Mathf.Clamp01(growth);

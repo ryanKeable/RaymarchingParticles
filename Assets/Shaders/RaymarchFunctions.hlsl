@@ -108,9 +108,6 @@ float GetDistance(float3 p)
         spheres = opSmoothUnion(sphere, spheres, _UnionSmoothness);
     }
 
-    dist = spheres;
-    return dist;
-    
     UNITY_UNROLL
     for (int j = 1; j < _ConnectionCount; j++)
     {

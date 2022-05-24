@@ -30,10 +30,11 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private ParticleSystem.Particle[] _particles;
     private ParticleSystem.Particle[] _activeParticles;
-    private Vector4[] _particleTransform = new Vector4[8];
+
+    [SerializeField]
+    private Vector4[] _particleTransform;
 
     private Vector4[] _particleConnectionPos = new Vector4[32];
-    [SerializeField]
     private Vector4[] _particleConnectionScale = new Vector4[32];
     private Matrix4x4[] _particleConnectionMatrices = new Matrix4x4[32];
 
@@ -41,7 +42,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private List<Matrix4x4> _particleConnectionRotMatrix;
 
     private int _particlesCount;
-    private const int MaxParticles = 8;
+    private const int MaxParticles = 16;
 
     private void OnEnable()
     {
@@ -61,10 +62,11 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private void Clear()
     {
         _particleNodeConnections = new List<ParticleNodeConnection>();
-        _particleTransform = new Vector4[8];
         _particleConnectionPos = new Vector4[32];
         _particleConnectionScale = new Vector4[32];
         _particleConnectionMatrices = new Matrix4x4[32];
+        _particleTransform = new Vector4[MaxParticles];
+
         _particlesCount = 0;
 
     }
@@ -137,6 +139,8 @@ public class RaymarchParticleBuffer : MonoBehaviour
         // init particle array
         if (_particles == null || _particles.Length < particleSystemToRender.main.maxParticles)
             _particles = new ParticleSystem.Particle[particleSystemToRender.main.maxParticles];
+
+        if (_particleTransform == null) _particleTransform = new Vector4[MaxParticles];
 
         ParticleSDFUtils.AllocateResources(particleSystemToRender, transform, MaxParticles);
 
