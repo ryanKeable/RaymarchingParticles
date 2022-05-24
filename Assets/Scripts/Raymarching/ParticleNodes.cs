@@ -5,99 +5,119 @@ using System;
 using System.Linq;
 // using Editor.c
 
-[System.Serializable]
-public class ParticleNode
+public static class ParticleSDFUtils
 {
-    public int id;
+    private static ParticleSystem _system;
+    private static Transform _transform;
+    private static List<float> _distances;
+    private static ParticleSystem.Particle[] _particles;
 
-    public ParticleSystem.Particle particle;
-
-    public Vector3 pos;
-    public float scale;
-    public float lifetime;
-    private List<float> distances;
-    private ParticleSystem system;
-    private float distThreshold;
     const int maxConnections = 2;
 
-    public ParticleNode(int _id, ParticleSystem.Particle _particle, ParticleSystem _system, float _distThreshold)
+    public static void AllocateResources(ParticleSystem _particeSystem, Transform _localTransform, int maxParticleSize)
     {
-        id = _id;
-        particle = _particle;
-        distThreshold = _distThreshold;
-        system = _system;
+        _system = _particeSystem;
+        _transform = _localTransform;
+        // _particles = new ParticleSystem.Particle[maxParticleSize];
     }
 
-    public void UpdateParticleNode(Transform t)
+    public static void FindCloseConnections(ParticleSystem.Particle[] _particleArray, ParticleSystem.Particle _thisParticle, ParticleNodeConnection[] _particleNodeConnections, float _distThrehold, out List<ParticleNodeConnection> newConnections)
     {
-        MDebug.LogBlue($" pos {particle.position}");
-        pos = t.InverseTransformPoint(particle.position);
-        scale = particle.GetCurrentSize(system) / t.localScale.x;
-        lifetime = particle.remainingLifetime;
-    }
-
-    public void FindCloseConnections(ParticleNode[] _particleNodes, ParticleNodeConnection[] _particleNodeConnections, out List<ParticleNodeConnection> newConnections)
-    {
+        _particles = _particleArray;
         newConnections = new List<ParticleNodeConnection>();
-        List<ParticleNode> closeParticles = FindCloseParticles(_particleNodes);
+        List<ParticleSystem.Particle> closeParticles = FindCloseParticles(_thisParticle, _distThrehold);
+
         if (closeParticles.Count == 0) return;
 
 
-        CheckToAddConnections(closeParticles.ToArray(), _particleNodeConnections, out newConnections);
+        CheckToAddConnections(_thisParticle, closeParticles.ToArray(), _particleNodeConnections, out newConnections);
     }
 
-    private List<ParticleNode> FindCloseParticles(ParticleNode[] _particleNodes)
+    private static List<ParticleSystem.Particle> FindCloseParticles(ParticleSystem.Particle _thisParticle, float _distThrehold)
     {
-        ParticleNode[] allOtherParticles = _particleNodes.Where(p => p.id != id).ToArray(); // only gather particles who ID is not contained in IDs to ignore
-        // gather close particles within the dist threshold --  < dist threshold is clamping the distance >.<
+        List<ParticleSystem.Particle> _allOtherParticles = _particles.ToList();// only gather particles who ID is not contained in IDs to ignore
+        _allOtherParticles.Remove(_thisParticle);
 
-        distances = new List<float>();
-        List<ParticleNode> closeParticlesQuery = allOtherParticles.Where(p => CheckDistance(p.particle.position, particle.position)).ToList();
-        closeParticlesQuery.OrderBy(p => distances);
+        // gather close particles within the dist threshold --  < dist threshold is clamping the distance >.<
+        _distances = new List<float>();
+        List<ParticleSystem.Particle> closeParticlesQuery = _allOtherParticles.Where(p => CheckActiveAndDistance(p, _thisParticle, _distThrehold)).ToList();
+        closeParticlesQuery.OrderBy(p => _distances);
 
         if (closeParticlesQuery.Count > maxConnections) closeParticlesQuery.RemoveRange(maxConnections, closeParticlesQuery.Count - maxConnections);
 
         return closeParticlesQuery;
     }
 
-    private void CheckToAddConnections(ParticleNode[] _closeNodes, ParticleNodeConnection[] _connections, out List<ParticleNodeConnection> _newConnections)
+    private static void CheckToAddConnections(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle[] _closeNodes, ParticleNodeConnection[] _connections, out List<ParticleNodeConnection> _newConnections)
     {
         _newConnections = new List<ParticleNodeConnection>();
 
         for (int i = 0; i < _closeNodes.Length; i++)
         {
-            bool connectionExists = false;
-            for (int j = 0; j < _connections.Length; j++)
-            {
-                if (_connections[j].id == ConnectionId(id, _closeNodes[i].id))
-                {
-                    connectionExists = true;
-                }
-            }
+            int id = ConnectionId(_thisParticle, _closeNodes[i]);
+            bool connectionExists = _connections.Select(c => c.id).Contains(id);
 
-            if (!connectionExists)
+            if (!connectionExists && ParticleIsActive(_thisParticle) && ParticleIsActive(_closeNodes[i]))
             {
-                _newConnections.Add(AddNewConnection(_closeNodes[i]));
+                _newConnections.Add(AddNewConnection(_thisParticle, _closeNodes[i]));
             }
         }
     }
 
-    private ParticleNodeConnection AddNewConnection(ParticleNode _p)
+    private static ParticleNodeConnection AddNewConnection(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle)
     {
-        int connectionId = ConnectionId(id, _p.id);
-        return new ParticleNodeConnection(connectionId, this, _p);
+        int connectionId = ConnectionId(_thisParticle, _targetParticle);
+        return new ParticleNodeConnection(connectionId, _thisParticle.randomSeed, _targetParticle.randomSeed);
     }
 
-    private int ConnectionId(int a, int b)
+    private static int ConnectionId(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle)
     {
-        return a + b;
+        uint combination = _thisParticle.randomSeed + _targetParticle.randomSeed;
+        return RandomUtilities.SeededRandomRange((int)combination, 0, 10000);
     }
 
-    private bool CheckDistance(Vector3 p, Vector3 tp)
+    private static bool CheckParticleMatch(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle)
     {
-        float dist = Vector3.Distance(p, tp);
-        distances.Add(dist);
-        return dist < distThreshold;
+        MDebug.LogGreen($"this {Array.IndexOf(_particles, _thisParticle)} target {Array.IndexOf(_particles, _targetParticle)}");
+        return Array.IndexOf(_particles, _thisParticle) != Array.IndexOf(_particles, _targetParticle);
+    }
+
+    private static bool CheckActiveAndDistance(ParticleSystem.Particle _thisParticle, ParticleSystem.Particle _targetParticle, float _distThrehold)
+    {
+        float dist = Vector3.Distance(_thisParticle.position, _targetParticle.position);
+        _distances.Add(dist);
+        return dist < _distThrehold;
+    }
+
+    public static bool ParticleIsActive(ParticleSystem.Particle _particle)
+    {
+        if (_particle.randomSeed == 0) return false;
+        return CurrentParticleSizeToLocalTransform(_particle) > ClampValueByPercentage(StartParticleSizeToLocalTransform(_particle));
+    }
+
+    public static float ClampValueByPercentage(float value)
+    {
+        return value *= 0.05f;
+    }
+
+    public static float CurrentParticleSizeToLocalTransform(ParticleSystem.Particle _particle)
+    {
+        return Mathf.Min(_particle.GetCurrentSize(_system), _particle.startSize) / _transform.localScale.x;
+    }
+
+    public static float GetParticleSize(ParticleSystem.Particle _particle)
+    {
+        return _particle.GetCurrentSize(_system);
+    }
+
+    public static float StartParticleSizeToLocalTransform(ParticleSystem.Particle _particle)
+    {
+        return _particle.startSize / _transform.localScale.x;
+    }
+
+    public static Vector3 ParticlePostionToWorld(ParticleSystem.Particle _particle)
+    {
+        return _transform.InverseTransformPoint(_particle.position);
     }
 }
 
@@ -105,10 +125,19 @@ public class ParticleNode
 public class ParticleNodeConnection
 {
     public int id;
-    public List<ParticleNode> nodes = new List<ParticleNode>();
+
     public Matrix4x4 rotMatrix;
+    public Vector3[] positions = new Vector3[2];
     public Vector3 currentScale;
-    public Vector3 pos;
+
+    public float[] particleScales = new float[2];
+    public float[] particleLife = new float[2];
+
+    private uint startSeed;
+    private uint endSeed;
+    private Vector3 lastKnownStartPos;
+    private Vector3 lastKnownEndPos;
+
 
     private float length;
     private float growth;
@@ -117,22 +146,53 @@ public class ParticleNodeConnection
 
 
     // if I want to use cylinders where the origin is at the sphere i need to:
-    // - Flip the dir
-    // - Track the dir in a list and compare them too (if offset and dir exist then return)
-    // - pass the Vector3 a coords as the translation 
-    public ParticleNodeConnection(int _id, ParticleNode _a, ParticleNode _b)
+    /*
+     - still need to fix some snapping
+     - when a particle dies, we also need to reduce the length of the connection (can't just kill it)
+     - also need to manage the extra scale thats applied to the sdf union when a connection is introduced
+    */
+    public ParticleNodeConnection(int _id, uint _start, uint _end)
     {
         id = _id;
-        nodes.Add(_a);
-        nodes.Add(_b);
+        startSeed = _start;
+        endSeed = _end;
     }
 
-    public ParticleNodeConnection UpdateParticleNodeConnection(float _growthValue, float _distThreshold, float _minCapScale)
+    public ParticleNodeConnection UpdateParticleNodeConnection(ParticleSystem.Particle[] _activeParticles, float _growthValue, float _distThreshold, float _minCapScale)
     {
+        var startQuery = _activeParticles.Where(p => p.randomSeed == startSeed).ToArray();
+        if (startQuery.Length > 0)
+        {
+            ParticleSystem.Particle startP = startQuery.First();
+            positions[0] = ParticleSDFUtils.ParticlePostionToWorld(startP);
+            particleScales[0] = ParticleSDFUtils.CurrentParticleSizeToLocalTransform(startP);
+            particleLife[0] = startP.remainingLifetime;
+        }
+        else
+        {
+            positions[0] = lastKnownStartPos;
+            particleScales[0] = 0;
+            particleLife[0] = 0;
+        }
+
+        var endQuery = _activeParticles.Where(p => p.randomSeed == endSeed).ToArray();
+        if (endQuery.Length > 0)
+        {
+            ParticleSystem.Particle endP = endQuery.First();
+            positions[1] = ParticleSDFUtils.ParticlePostionToWorld(endP);
+            particleScales[1] = ParticleSDFUtils.CurrentParticleSizeToLocalTransform(endP);
+            particleLife[1] = endP.remainingLifetime;
+        }
+        else
+        {
+            positions[1] = lastKnownEndPos;
+            particleScales[1] = 0;
+            particleLife[1] = 0;
+        }
 
 
-        Vector3 dir = Vector3.Normalize(nodes[1].pos - nodes[0].pos);
-        float dist = Vector3.Distance(nodes[0].pos, nodes[1].pos);
+        Vector3 dir = Vector3.Normalize(positions[1] - positions[0]);
+        float dist = Vector3.Distance(positions[0], positions[1]);
 
         // half the distance so our length is correct
         dist /= 2;
@@ -140,13 +200,12 @@ public class ParticleNodeConnection
 
         Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
 
-        Vector3 offset = nodes[0].pos - dir * dist; // use this is we want to have the Connections positioned between the spheres
+        // Vector3 offset = nodes[0].pos - dir * dist; // use this is we want to have the Connections positioned between the spheres
 
         rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
-        pos = nodes[0].pos; // offset
 
-        float targetR1 = nodes[0].scale * 0.75f;
-        float targetR2 = nodes[1].scale * 0.75f;
+        float targetR1 = particleScales[0] * 0.5f;
+        float targetR2 = particleScales[1] * 0.5f;
 
         if (dist > _distThreshold)
         {
@@ -156,9 +215,20 @@ public class ParticleNodeConnection
         float targetDist = Mathf.Min(dist, _distThreshold);
 
         ScaleOverTime(_growthValue, targetDist, targetR1, targetR2);
+        currentScale = new Vector3(length, targetR1, targetR2);
 
-        if (length <= 0) // when we completely shrink, remove this
+        if (length <= 0.001f) // when we completely shrink, remove this
+        {
             return this;
+        }
+
+        if (particleLife[0] == 0 && particleLife[1] == 0) // if we run out of time, remove this
+        {
+            return this;
+        }
+
+        lastKnownStartPos = positions[0];
+        lastKnownEndPos = positions[1];
 
         return null;
     }
@@ -170,9 +240,6 @@ public class ParticleNodeConnection
         growth += _growthValue;
 
         length = Mathf.SmoothStep(0, _dist, growth);
-        r1 = Mathf.SmoothStep(0, _r1, growth);
-        r2 = Mathf.SmoothStep(0, _r2, growth);
 
-        currentScale = new Vector3(length, r1, r2);
     }
 }

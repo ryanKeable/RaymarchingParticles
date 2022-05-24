@@ -97,31 +97,45 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   particleSystemToRender: {fileID: 6608446560685347202}
-  unionSmoothness: 0.14
-  distThreshold: 0.75
+  unionSmoothness: 0.2
+  distThreshold: 5
   minConnectionScale: 0.025
-  connectionGrowthValue: 0.25
+  connectionGrowthValue: 0.05
   renderMat: {fileID: 2100000, guid: b9bb1065bda5c6d40988cb0a0bbe5688, type: 2}
-  _nodesToUpdate:
-  - id: 5526
-    pos: {x: 0.31151158, y: 0.1761826, z: 0.18649222}
-    scale: 0.1248384
-  - id: 4874
-    pos: {x: 0.17823185, y: 0.003969631, z: 0.42535672}
-    scale: 0.022362694
-  - id: 3981
-    pos: {x: -0.119777046, y: 0.2627357, z: 0.043540955}
-    scale: 0.08533746
-  - id: 8176
-    pos: {x: -0.31864682, y: 0.10571365, z: -0.21108861}
-    scale: 0.013377728
-  - id: 340
-    pos: {x: 0.08681977, y: 0.006369763, z: -0.044765987}
-    scale: 0.0028483048
-  - id: 8647
-    pos: {x: -0.01848562, y: -0.022851426, z: -0.06991279}
-    scale: 0.035209343
   _particleNodeConnections: []
+  _particleConnectionScale:
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6177546924250485906
 GameObject:
   m_ObjectHideFlags: 0
@@ -134,7 +148,7 @@ GameObject:
   - component: {fileID: 6608446560685347202}
   - component: {fileID: 4208718908723766692}
   m_Layer: 0
-  m_Name: ParticleSystem
+  m_Name: TheParticleSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -729,7 +743,7 @@ ParticleSystem:
     gravityModifier:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 0.1
       minScalar: 0.54
       maxCurve:
         serializedVersion: 2
@@ -1106,29 +1120,29 @@ ParticleSystem:
         - serializedVersion: 3
           time: 0
           value: 0
-          inSlope: 0
-          outSlope: 0
+          inSlope: -0.0184463
+          outSlope: -0.0184463
           tangentMode: 0
           weightedMode: 0
           inWeight: 0
-          outWeight: 0
+          outWeight: 0.3849456
         - serializedVersion: 3
-          time: 0.2952385
+          time: 0.5047618
           value: 1
-          inSlope: 0
-          outSlope: 0
+          inSlope: -0.011425262
+          outSlope: -0.011425262
           tangentMode: 0
-          weightedMode: 0
-          inWeight: 0
-          outWeight: 0
+          weightedMode: 3
+          inWeight: 0.7069183
+          outWeight: 0.74102527
         - serializedVersion: 3
           time: 1
           value: 0
-          inSlope: 0
-          outSlope: 0
+          inSlope: 0.018241838
+          outSlope: 0.018241838
           tangentMode: 0
           weightedMode: 0
-          inWeight: 0
+          inWeight: 0.17956871
           outWeight: 0
         m_PreInfinity: 2
         m_PostInfinity: 2
@@ -2810,11 +2824,11 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
   NoiseModule:
-    enabled: 0
+    enabled: 1
     strength:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 1
+      scalar: 0.5
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -2980,7 +2994,7 @@ ParticleSystem:
     scrollSpeed:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 2
       minScalar: 0
       maxCurve:
         serializedVersion: 2

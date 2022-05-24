@@ -26,32 +26,22 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
 
     [SerializeField]
-    private List<ParticleNode> _nodesToUpdate = new List<ParticleNode>();
-    [SerializeField]
     private List<ParticleNodeConnection> _particleNodeConnections = new List<ParticleNodeConnection>();
 
     private ParticleSystem.Particle[] _particles;
-    private ParticleSystem.Particle[] _lastKnownParticles;
-    private ParticleNode[] _particleNodes = new ParticleNode[8];
+    private ParticleSystem.Particle[] _activeParticles;
     private Vector4[] _particleTransform = new Vector4[8];
+
     private Vector4[] _particleConnectionPos = new Vector4[32];
+    [SerializeField]
     private Vector4[] _particleConnectionScale = new Vector4[32];
     private Matrix4x4[] _particleConnectionMatrices = new Matrix4x4[32];
 
     private List<Vector4> _particleConnectionTranslationScale;
     private List<Matrix4x4> _particleConnectionRotMatrix;
 
-    private int _totalParticleCount;
     private int _particlesCount;
-    private int _particleNodeCount;
     private const int MaxParticles = 8;
-
-    public Vector3[] ParticleConnections { get => _particleNodeConnections.Select(n => n.pos).ToArray(); }
-
-    private void Start()
-    {
-        Clear();
-    }
 
     private void OnEnable()
     {
@@ -70,10 +60,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void Clear()
     {
-        _nodesToUpdate = new List<ParticleNode>();
         _particleNodeConnections = new List<ParticleNodeConnection>();
-        _particleNodeCount = 0;
-        _totalParticleCount = 0;
+        _particleTransform = new Vector4[8];
+        _particleConnectionPos = new Vector4[32];
+        _particleConnectionScale = new Vector4[32];
+        _particleConnectionMatrices = new Matrix4x4[32];
+        _particlesCount = 0;
+
     }
 
     // this only renders correctly after a re-compile?
@@ -87,14 +80,14 @@ public class RaymarchParticleBuffer : MonoBehaviour
             return;
         }
 
+        Initialize();
         GatherParticleSystemData();
 
-        ManageParticleNodes();
         UpdateParticleData();
         SetParticleMaterialProps();
 
-        // SetParticleConnectionData();
-        // SetConnectionMaterialProps();
+        SetParticleConnectionData();
+        SetConnectionMaterialProps();
     }
 
     public void AddToConnections(ParticleNodeConnection connection)
@@ -110,7 +103,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private void SetParticleMaterialProps()
     {
         renderMat.SetVectorArray("_Particle", _particleTransform);
-        renderMat.SetInt("_ParticleCount", _particleNodeCount);
+        renderMat.SetInt("_ParticleCount", _particlesCount);
         renderMat.SetFloat("_UnionSmoothness", unionSmoothness);
         renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
 
@@ -127,11 +120,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void GatherParticleSystemData()
     {
-        InitParticles();
+
         if (particleSystemToRender.isEmitting) _particlesCount = particleSystemToRender.GetParticles(_particles);
+        _activeParticles = new ParticleSystem.Particle[_particlesCount];
+        particleSystemToRender.GetParticles(_activeParticles, _particlesCount);
     }
 
-    private void InitParticles()
+    private void Initialize()
     {
         if (particleSystemToRender.main.maxParticles != MaxParticles)
         {
@@ -142,128 +137,25 @@ public class RaymarchParticleBuffer : MonoBehaviour
         // init particle array
         if (_particles == null || _particles.Length < particleSystemToRender.main.maxParticles)
             _particles = new ParticleSystem.Particle[particleSystemToRender.main.maxParticles];
-    }
 
-    private void ManageParticleNodes()
-    {
-        if (_particleNodeCount == _particlesCount) return;
-        if (_nodesToUpdate.Count == _particlesCount) return;
+        ParticleSDFUtils.AllocateResources(particleSystemToRender, transform, MaxParticles);
 
-        AddNewParticleNodes();
-        // RemoveNodesAndConnections();
-
-        _particleNodeCount = _particlesCount;
-        _lastKnownParticles = _particles;
-    }
-
-    // this is fucking awful
-    private void AddNewParticleNodes()
-    {
-        List<ParticleNode> nodesToAdd = new List<ParticleNode>();
-
-        // this fucking thing is alwayus maxParticles length zzzzz
-        for (int i = 0; i < _particlesCount; i++)
-        {
-            var nodeIDQuery = _nodesToUpdate.Select(n => n.id).ToArray();
-            int id = RandomUtilities.SeededRandomRange(_totalParticleCount, 0, 10000);
-
-            if (nodeIDQuery.Length == 0)
-            {
-                _totalParticleCount++;
-                ParticleNode newNode = new ParticleNode(id, _particles[i], particleSystemToRender, distThreshold);
-                _nodesToUpdate.Add(newNode);
-
-                MDebug.LogFern($"Add first new node {newNode.id} _nodesToUpdate.Count {_nodesToUpdate.Count}");
-
-                break;
-            }
-
-            bool isTracked = false;
-            foreach (int _id in nodeIDQuery)
-            {
-                if (_id == id) isTracked = true;
-            }
-            if (!isTracked)
-            {
-                _totalParticleCount++;
-                ParticleNode newNode = new ParticleNode(id, _particles[i], particleSystemToRender, distThreshold);
-                _nodesToUpdate.Add(newNode);
-
-                MDebug.LogLtBlue($"{i} Add subsequent new node {newNode.id} _nodesToUpdate.Count {_nodesToUpdate.Count}");
-            }
-        }
-
-    }
-
-    private void RemoveNodesAndConnections()
-    {
-        if (_nodesToUpdate.Count <= _particlesCount) return;
-
-        List<ParticleNode> nodesToRemove = new List<ParticleNode>();
-        foreach (ParticleSystem.Particle p in _lastKnownParticles)
-        {
-            foreach (ParticleNode n in _nodesToUpdate)
-            {
-                if (n.particle.position != p.position) nodesToRemove.Add(n);
-            }
-        }
-
-        List<ParticleNodeConnection> connectionsToRemove = new List<ParticleNodeConnection>();
-        foreach (ParticleNodeConnection existingConnection in _particleNodeConnections)
-        {
-            bool nodeExists = false;
-            foreach (ParticleNode n in nodesToRemove)
-            {
-                if (existingConnection.nodes[0] != n || existingConnection.nodes[1] != n) nodeExists = true;
-            }
-            if (!nodeExists) connectionsToRemove.Add(existingConnection);
-        }
-
-        foreach (ParticleNodeConnection connectionToRemove in connectionsToRemove)
-        {
-            _particleNodeConnections.Remove(connectionToRemove);
-        }
-
-        foreach (ParticleNode nodeToRemove in nodesToRemove)
-        {
-            _nodesToUpdate.Remove(nodeToRemove);
-            MDebug.LogPink($"Remove node {nodeToRemove.id}");
-        }
-
-    }
-
-    private List<ParticleSystem.Particle> FindRemovedParticles()
-    {
-        List<ParticleSystem.Particle> removedParticles = new List<ParticleSystem.Particle>();
-
-        foreach (ParticleSystem.Particle lp in _lastKnownParticles)
-        {
-            bool particleExists = false;
-            foreach (ParticleSystem.Particle p in _particles)
-            {
-                if (Array.IndexOf(_lastKnownParticles, lp) == Array.IndexOf(_particles, p)) particleExists = true;
-            }
-
-            if (!particleExists) removedParticles.Add(lp);
-        }
-
-        return removedParticles;
     }
 
     private void UpdateParticleData()
     {
-        if (_nodesToUpdate.Count == 0) return;
-
-        for (int i = 0; i < _nodesToUpdate.Count; i++)
+        for (int i = 0; i < _particlesCount; i++)
         {
-            _nodesToUpdate[i].UpdateParticleNode(transform);
-            _particleTransform[i] = new Vector4(_nodesToUpdate[i].pos.x, _nodesToUpdate[i].pos.y, _nodesToUpdate[i].pos.z, _nodesToUpdate[i].scale);
+            Vector3 position = new Vector3(_particles[i].position.x, _particles[i].position.y, _particles[i].position.z);
+            position = transform.InverseTransformPoint(position);
+            float scale = _activeParticles[i].GetCurrentSize(particleSystemToRender) / transform.localScale.x;
+            _particleTransform[i] = new Vector4(position.x, position.y, position.z, scale);
         }
     }
 
     private void SetParticleConnectionData()
     {
-        if (_nodesToUpdate.Count == 0) return;
+        if (_particlesCount == 0) return;
         FindNewConnections();
         UpdateConnections();
         SetConnectionData();
@@ -271,10 +163,10 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void FindNewConnections()
     {
-        for (int i = 0; i < _nodesToUpdate.Count; i++)
+        for (int i = 0; i < _particlesCount; i++)
         {
             List<ParticleNodeConnection> newConnections = new List<ParticleNodeConnection>();
-            _nodesToUpdate[i].FindCloseConnections(_nodesToUpdate.ToArray(), _particleNodeConnections.ToArray(), out newConnections);
+            ParticleSDFUtils.FindCloseConnections(_activeParticles, _activeParticles[i], _particleNodeConnections.ToArray(), distThreshold, out newConnections);
 
             if (newConnections.Count > 0)
             {
@@ -288,7 +180,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
         List<ParticleNodeConnection> connectionsToRemove = new List<ParticleNodeConnection>();
         foreach (ParticleNodeConnection exsitingConnection in _particleNodeConnections)
         {
-            ParticleNodeConnection connectionToRemove = exsitingConnection.UpdateParticleNodeConnection(connectionGrowthValue, distThreshold, minConnectionScale);
+            ParticleNodeConnection connectionToRemove = exsitingConnection.UpdateParticleNodeConnection(_activeParticles, connectionGrowthValue, distThreshold, minConnectionScale);
             if (connectionToRemove != null) connectionsToRemove.Add(connectionToRemove);
         }
 
@@ -302,18 +194,9 @@ public class RaymarchParticleBuffer : MonoBehaviour
     {
         for (int i = 0; i < _particleNodeConnections.Count; i++)
         {
-            _particleConnectionPos[i] = _particleNodeConnections[i].pos;
+            _particleConnectionPos[i] = _particleNodeConnections[i].positions[0];
             _particleConnectionScale[i] = _particleNodeConnections[i].currentScale;
             _particleConnectionMatrices[i] = _particleNodeConnections[i].rotMatrix;
         }
-    }
-
-    public void PrintDebug()
-    {
-        // foreach (Vector4 v in _particleConnectionTranslationScale) Debug.Log(v);
-        foreach (Vector4 v in _particleConnectionTranslationScale) Debug.Log(v);
-
-        // Debug.Log($"_particleConnectionTranslationScale {_particleConnectionTranslationScale.Count}");
-        Debug.Log($"vectorQuery {_particleConnectionTranslationScale.Count}");
     }
 }

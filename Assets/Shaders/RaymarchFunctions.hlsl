@@ -29,6 +29,11 @@ float dot2(float2 v)
     return dot(v, v);
 }
 
+float opUnion(float d1, float d2)
+{
+    return min(d1, d2);
+}
+
 float opSmoothUnion(float d1, float d2, float k)
 {
     float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
@@ -104,20 +109,23 @@ float GetDistance(float3 p)
     }
 
     dist = spheres;
-
-    // UNITY_UNROLL
-    // for (int j = 1; j < _ConnectionCount; j++)
-    // {
-
-    //     float h = _ConnectionScale[j].x;
-    //     float r1 = _ConnectionScale[j].y;
-    //     float r2 = _ConnectionScale[j].z;
-    //     float connection = CappedCone(p - _ConnectionPos[j].xyz, transpose(_ConnectionRotationMatrix[j]), h, r1, r2, float3(0, h, 0));
+    return dist;
     
-    //     connections = opSmoothUnion(connection, connections, _UnionSmoothness);
-    // }
+    UNITY_UNROLL
+    for (int j = 1; j < _ConnectionCount; j++)
+    {
+
+        float h = _ConnectionScale[j].x;
+        float r1 = _ConnectionScale[j].y;
+        float r2 = _ConnectionScale[j].z;
+        float connection = CappedCone(p - _ConnectionPos[j].xyz, transpose(_ConnectionRotationMatrix[j]), h, r1, r2, float3(0, h, 0));
+        
+        connections = opSmoothUnion(connection, connections, _UnionSmoothness);
+    }
     
-    // dist = opSmoothUnion(spheres, connections, _UnionSmoothness) / 2; // this division is causing some errors around the visual edges
+
+
+    dist = opSmoothUnion(spheres, connections, _UnionSmoothness); // this division is causing some errors around the visual edges
 
     
     return dist;
