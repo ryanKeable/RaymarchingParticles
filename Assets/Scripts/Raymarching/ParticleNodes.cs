@@ -132,7 +132,6 @@ public class ParticleNodeConnection
     private float[] particleScales = new float[2];
     public float[] particleLife = new float[2];
 
-    public float debugDistance;
 
     private uint startSeed;
     private uint endSeed;
@@ -140,13 +139,11 @@ public class ParticleNodeConnection
     private Vector3 lastKnownStartPos;
     private Vector3 lastKnownEndPos;
 
-
-    public float length;
-    public float growth;
     public float lerpValue;
+
+    private float growth;
     private float r1; // might end upbeing a Vector2?
     private float r2; // might end upbeing a Vector2?
-
 
     // if I want to use cylinders where the origin is at the sphere i need to:
     /*
@@ -160,12 +157,12 @@ public class ParticleNodeConnection
         startSeed = _start;
         endSeed = _end;
         growth = 0.01f;
-        length = 0;
     }
 
     // clean this up
-    public ParticleNodeConnection UpdateParticleNodeConnection(ParticleSystem.Particle[] _activeParticles, float _growthValue, float _distThreshold, float _minCapScale)
+    public ParticleNodeConnection UpdateParticleNodeConnection(ParticleSystem.Particle[] _activeParticles, float _growthValue, float _stretchScale, float _distThreshold, float _minCapScale)
     {
+
         var startQuery = _activeParticles.Where(p => p.randomSeed == startSeed).ToArray();
         if (startQuery.Length > 0)
         {
@@ -197,51 +194,57 @@ public class ParticleNodeConnection
         }
 
         Vector3 dir;
-        if (particleScales[0] > particleScales[1])
-        {
-            dir = Vector3.Normalize(positions[1] - positions[0]);
-            originPos = positions[0];
-        }
-        else
-        {
-            dir = Vector3.Normalize(positions[0] - positions[1]);
-            originPos = positions[1];
-            float flipScale = particleScales[0];
-            particleScales[0] = particleScales[1];
-            particleScales[1] = flipScale;
-        }
+        // if (particleScales[0] > particleScales[1])
+        // {
+        //     dir = Vector3.Normalize(positions[1] - positions[0]);
+        //     originPos = positions[0];
+        // }
+        // else
+        // {
+        //     dir = Vector3.Normalize(positions[0] - positions[1]);
+        //     originPos = positions[1];
+        //     float flipScale = particleScales[0];
+        //     particleScales[0] = particleScales[1];
+        //     particleScales[1] = flipScale;
+        // }
+
+        dir = Vector3.Normalize(positions[0] - positions[1]);
+        Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
+        rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
 
         float dist = Vector3.Distance(positions[0], positions[1]);
-
         // half the distance so our length is correct
         dist /= 2;
         _distThreshold /= 2;
 
-        Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
+        originPos = positions[0] - dir * dist; // use this is we want to have the Connections positioned between the spheres
 
-        // Vector3 offset = nodes[0].pos - dir * dist; // use this is we want to have the Connections positioned between the spheres
-
-        rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
-
-        if (dist > _distThreshold || particleScales[0] <= _minCapScale || particleScales[1] <= _minCapScale)
+        if (dist > _distThreshold)
         {
+            MDebug.LogPurple($"{id} dist is beyond our _distThreshold -  flip growth!");
+
+            _growthValue = -_growthValue * 2; // flip when we need to remove
+            _distThreshold /= 2; // reduce max length 
+        }
+
+        bool particle01Dying = particleLife[0] < 0.5f && particleScales[0] < _minCapScale * 2;
+        bool particle02Dying = particleLife[1] < 0.5f && particleScales[1] < _minCapScale * 2;
+        if (particle01Dying || particle02Dying)
+        {
+            MDebug.LogOrange($"{id} particles are dying -  flip growth!");
+
             _growthValue = -_growthValue * 2; // flip when we need to remove
             _distThreshold /= 2; // reduce max length 
         }
 
         float targetDist = Mathf.Min(dist, _distThreshold);
 
-        ScaleLengthOnUpdate(_growthValue, targetDist);
+        ScaleLengthOnUpdate(_growthValue, targetDist, _stretchScale, _minCapScale);
 
-        float fullLengthStretch = lerpValue * 0.5f;
-        float targetR1 = particleScales[0] * (lerpValue) * 0.75f - fullLengthStretch;
-        float targetR2 = particleScales[1] * (lerpValue) * 0.75f - fullLengthStretch;
 
-        currentScale = new Vector3(length, targetR1, targetR2);
-        debugDistance = dist;
-
-        if (length <= 0.001f) // when we completely shrink, remove this
+        if (currentScale.x < 0.001f) // when we completely shrink, remove this
         {
+            MDebug.LogGreen($"{id} Length is 0 -  remove me!");
             return this;
         }
 
@@ -256,13 +259,21 @@ public class ParticleNodeConnection
         return null;
     }
 
-    public void ScaleLengthOnUpdate(float _growthValue, float _dist)
+    public void ScaleLengthOnUpdate(float _growthValue, float _dist, float _stretchScale, float _minCapScale)
     {
         growth += _growthValue;
         growth = Mathf.Min(_dist, growth);
+
         lerpValue = growth / _dist; // 0->1 range
         lerpValue = Mathf.Clamp01(lerpValue);
-        length = Mathf.SmoothStep(0, _dist, lerpValue);
+        float length = Mathf.SmoothStep(0, _dist, lerpValue);
 
+        float fullLengthStretch = lerpValue * (1 - _stretchScale); // this can be 0 -- we dont want that we want 1->0.5
+        float targetR1 = particleScales[0] * (lerpValue - fullLengthStretch);
+        targetR1 = Mathf.Min(_minCapScale, targetR1);
+        float targetR2 = particleScales[1] * (lerpValue - fullLengthStretch);
+        targetR2 = Mathf.Min(_minCapScale, targetR2);
+
+        currentScale = new Vector3(length, targetR1, targetR2); // getting negative values for scale?!
     }
 }

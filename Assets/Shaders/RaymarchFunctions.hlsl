@@ -63,6 +63,12 @@ float CappedCone(float3 p, float3x3 transform, float h, float r1, float r2, floa
     return s * sqrt(min(dot2(ca), dot2(cb)));
 }
 
+float CappedConeSymXZ(float3 p, float3x3 transform, float h, float r1, float r2, float3 o)
+{
+    p.xz = abs(p.xz);
+    return CappedCone(p, transform, h, r1, r2, o);
+}
+
 // I worked out the origin offset all by myself!! YAY!!!
 float Cylinder(float3 p, float3x3 transform, float r, float h, float3 o)
 {
@@ -86,7 +92,6 @@ float VectorAngleRadians(float3 a, float3 b)
     float t = p / d;
     return acos(t);
 }
-
 
 float GetDistance(float3 p)
 {
@@ -131,8 +136,10 @@ float GetDistance(float3 p)
         float r1 = _ConnectionScale[j].y;
         float r2 = _ConnectionScale[j].z;
         float connection = CappedCone(p - _ConnectionPos[j].xyz, transpose(_ConnectionRotationMatrix[j]), h, r1, r2, float3(0, h, 0));
+        float flippedConnection = CappedCone(p - _ConnectionPos[j].xyz, -transpose(_ConnectionRotationMatrix[j]), h, r1, r2, float3(0, h, 0));
         
-        connections = opSmoothUnion(connection, connections, _UnionSmoothness);
+        float bridge = opUnion(connection, flippedConnection);
+        connections = opSmoothUnion(bridge, connections, _UnionSmoothness);
     }
     
 

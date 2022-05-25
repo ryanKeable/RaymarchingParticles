@@ -22,6 +22,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
     public float distThreshold = 0.75f;
     public float minConnectionScale = 0.025f;
     public float connectionGrowthValue = 0.25f;
+    public float connectionStretchScale = 0.5f;
     public Material renderMat;
 
 
@@ -43,6 +44,9 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private int _particlesCount;
     private const int MaxParticles = 16;
+
+    public Vector4[] ConnectionPositions { get => _particleConnectionPos; }
+    public int Connections { get => _particleNodeConnections.Count; }
 
     private void OnEnable()
     {
@@ -186,7 +190,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
         float growthvalue = time * connectionGrowthValue;
         foreach (ParticleNodeConnection exsitingConnection in _particleNodeConnections)
         {
-            ParticleNodeConnection connectionToRemove = exsitingConnection.UpdateParticleNodeConnection(_activeParticles, growthvalue, distThreshold, minConnectionScale);
+            ParticleNodeConnection connectionToRemove = exsitingConnection.UpdateParticleNodeConnection(_activeParticles, growthvalue, connectionStretchScale, distThreshold, minConnectionScale);
             if (connectionToRemove != null) connectionsToRemove.Add(connectionToRemove);
         }
 
