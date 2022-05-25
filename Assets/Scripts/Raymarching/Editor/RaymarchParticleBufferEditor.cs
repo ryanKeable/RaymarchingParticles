@@ -9,32 +9,41 @@ public class RaymarchParticleBufferEditor : Editor
 {
 
     RaymarchParticleBuffer theItem;
-
+    static double timeSinceStartUp = 0f;
+    
     private void OnEnable()
     {
         theItem = target as RaymarchParticleBuffer;
         EditorApplication.update += Update;
-        SceneView.duringSceneGui += OnSceneGUI;
     }
 
     private void OnDisable()
     {
         EditorApplication.update -= Update;
-        SceneView.duringSceneGui -= OnSceneGUI;
     }
 
     public void Update()
     {
-        theItem.SetRaymarchParticleBuffer();
+        if (timeSinceStartUp == 0f)
+        {
+            ResetEditorDeltaTime();
+        }
+
+        double editorDeltaTime = (EditorApplication.timeSinceStartup - timeSinceStartUp);
+        timeSinceStartUp = EditorApplication.timeSinceStartup;
+
+        theItem.SetRaymarchParticleBuffer((float)editorDeltaTime);
     }
+
+    void ResetEditorDeltaTime()
+    {
+        timeSinceStartUp = EditorApplication.timeSinceStartup;
+    }
+
 
     public override void OnInspectorGUI()
     {
         base.DrawDefaultInspector();
     }
 
-    private void OnSceneGUI(SceneView _sceneView)
-    {
-
-    }
 }

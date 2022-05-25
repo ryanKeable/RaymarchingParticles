@@ -125,23 +125,25 @@ public class ParticleNodeConnection
 {
     public int id;
 
+    public Vector3 originPos;
     public Matrix4x4 rotMatrix;
-    public Vector3[] positions = new Vector3[2];
     public Vector3 currentScale;
 
-    public float[] particleScales = new float[2];
+    private float[] particleScales = new float[2];
     public float[] particleLife = new float[2];
 
-    public float currentLengthPercentage;
+    public float debugDistance;
 
     private uint startSeed;
     private uint endSeed;
+    private Vector3[] positions = new Vector3[2];
     private Vector3 lastKnownStartPos;
     private Vector3 lastKnownEndPos;
 
 
-    private float length;
-    private float growth;
+    public float length;
+    public float growth;
+    public float lerpValue;
     private float r1; // might end upbeing a Vector2?
     private float r2; // might end upbeing a Vector2?
 
@@ -157,8 +159,11 @@ public class ParticleNodeConnection
         id = _id;
         startSeed = _start;
         endSeed = _end;
+        growth = 0.01f;
+        length = 0;
     }
 
+    // clean this up
     public ParticleNodeConnection UpdateParticleNodeConnection(ParticleSystem.Particle[] _activeParticles, float _growthValue, float _distThreshold, float _minCapScale)
     {
         var startQuery = _activeParticles.Where(p => p.randomSeed == startSeed).ToArray();
@@ -191,8 +196,21 @@ public class ParticleNodeConnection
             particleLife[1] = 0;
         }
 
+        Vector3 dir;
+        if (particleScales[0] > particleScales[1])
+        {
+            dir = Vector3.Normalize(positions[1] - positions[0]);
+            originPos = positions[0];
+        }
+        else
+        {
+            dir = Vector3.Normalize(positions[0] - positions[1]);
+            originPos = positions[1];
+            float flipScale = particleScales[0];
+            particleScales[0] = particleScales[1];
+            particleScales[1] = flipScale;
+        }
 
-        Vector3 dir = Vector3.Normalize(positions[1] - positions[0]);
         float dist = Vector3.Distance(positions[0], positions[1]);
 
         // half the distance so our length is correct
@@ -205,21 +223,22 @@ public class ParticleNodeConnection
 
         rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
 
-
-
         if (dist > _distThreshold || particleScales[0] <= _minCapScale || particleScales[1] <= _minCapScale)
         {
-            _growthValue = -_growthValue; // flip when we need to remove
+            _growthValue = -_growthValue * 2; // flip when we need to remove
+            _distThreshold /= 2; // reduce max length 
         }
 
         float targetDist = Mathf.Min(dist, _distThreshold);
 
         ScaleLengthOnUpdate(_growthValue, targetDist);
 
-        currentLengthPercentage = length / dist;
-        float targetR1 = particleScales[0] * (currentLengthPercentage) * 0.75f;
-        float targetR2 = particleScales[1] * (currentLengthPercentage) * 0.75f;
+        float fullLengthStretch = lerpValue * 0.5f;
+        float targetR1 = particleScales[0] * (lerpValue) * 0.75f - fullLengthStretch;
+        float targetR2 = particleScales[1] * (lerpValue) * 0.75f - fullLengthStretch;
+
         currentScale = new Vector3(length, targetR1, targetR2);
+        debugDistance = dist;
 
         if (length <= 0.001f) // when we completely shrink, remove this
         {
@@ -239,11 +258,11 @@ public class ParticleNodeConnection
 
     public void ScaleLengthOnUpdate(float _growthValue, float _dist)
     {
-        // give us a value that is between 0 and 1
-        growth = Mathf.Clamp01(growth);
         growth += _growthValue;
-
-        length = Mathf.SmoothStep(0, _dist, growth);
+        growth = Mathf.Min(_dist, growth);
+        lerpValue = growth / _dist; // 0->1 range
+        lerpValue = Mathf.Clamp01(lerpValue);
+        length = Mathf.SmoothStep(0, _dist, lerpValue);
 
     }
 }

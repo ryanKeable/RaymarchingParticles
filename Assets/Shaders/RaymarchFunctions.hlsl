@@ -90,16 +90,20 @@ float VectorAngleRadians(float3 a, float3 b)
 
 float GetDistance(float3 p)
 {
-    if (_ParticleCount < 3) return 1;
-
     float dist = 0;
+
+    if (_ParticleCount == 0)
+    {
+        return dist;
+    }
 
     float spheres = Sphere(p - _Particle[0].xyz, _Particle[0].w);
 
-    float h = _ConnectionScale[0].x;
-    float r1 = _ConnectionScale[0].y;
-    float r2 = _ConnectionScale[0].z;
-    float connections = CappedCone(p - _ConnectionPos[0].xyz, transpose(_ConnectionRotationMatrix[0]), h, r1, r2, float3(0, h, 0));
+    if (_ParticleCount == 1)
+    {
+        dist = spheres;
+        return dist;
+    }
 
     UNITY_UNROLL
     for (int i = 1; i < _ParticleCount; i++)
@@ -107,6 +111,17 @@ float GetDistance(float3 p)
         float sphere = Sphere(p - _Particle[i].xyz, _Particle[i].w);
         spheres = opSmoothUnion(sphere, spheres, _UnionSmoothness);
     }
+
+    if (_ConnectionCount == 0)
+    {
+        dist = spheres;
+        return dist;
+    }
+
+    float h = _ConnectionScale[0].x;
+    float r1 = _ConnectionScale[0].y;
+    float r2 = _ConnectionScale[0].z;
+    float connections = CappedCone(p - _ConnectionPos[0].xyz, transpose(_ConnectionRotationMatrix[0]), h, r1, r2, float3(0, h, 0));
 
     UNITY_UNROLL
     for (int j = 1; j < _ConnectionCount; j++)
@@ -169,7 +184,7 @@ float3 RenderRaymarch(float2 uv, float3 rayOrigin, float3 hitPos)
     float3 rayDir = normalize(hitPos - rayOrigin);
     float distance = Raymarch(rayOrigin, rayDir);
 
-    if (distance > MAX_DIST) discard;// hit surface
+    if (distance > MAX_DIST || distance == 0) discard;// hit surface
 
     float3 pos = rayOrigin + rayDir * distance;
     float3 normal = GetNormal(pos);

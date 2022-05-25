@@ -51,12 +51,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void LateUpdate()
     {
-        SetRaymarchParticleBuffer();
+        float time = Time.deltaTime;
+        SetRaymarchParticleBuffer(time);
     }
 
     private void OnValidate()
     {
-        SetRaymarchParticleBuffer();
+        LateUpdate();
     }
 
     private void Clear()
@@ -72,7 +73,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
     }
 
     // this only renders correctly after a re-compile?
-    public void SetRaymarchParticleBuffer()
+    public void SetRaymarchParticleBuffer(float time)
     {
         if (!this.gameObject.activeInHierarchy) return;
         if (particleSystemToRender == null) return;
@@ -88,7 +89,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
         UpdateParticleData();
         SetParticleMaterialProps();
 
-        SetParticleConnectionData();
+        SetParticleConnectionData(time);
         SetConnectionMaterialProps();
     }
 
@@ -157,11 +158,11 @@ public class RaymarchParticleBuffer : MonoBehaviour
         }
     }
 
-    private void SetParticleConnectionData()
+    private void SetParticleConnectionData(float time)
     {
         if (_particlesCount == 0) return;
         FindNewConnections();
-        UpdateConnections();
+        UpdateConnections(time);
         SetConnectionData();
     }
 
@@ -179,12 +180,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
         }
     }
 
-    private void UpdateConnections()
+    private void UpdateConnections(float time)
     {
         List<ParticleNodeConnection> connectionsToRemove = new List<ParticleNodeConnection>();
+        float growthvalue = time * connectionGrowthValue;
         foreach (ParticleNodeConnection exsitingConnection in _particleNodeConnections)
         {
-            ParticleNodeConnection connectionToRemove = exsitingConnection.UpdateParticleNodeConnection(_activeParticles, connectionGrowthValue, distThreshold, minConnectionScale);
+            ParticleNodeConnection connectionToRemove = exsitingConnection.UpdateParticleNodeConnection(_activeParticles, growthvalue, distThreshold, minConnectionScale);
             if (connectionToRemove != null) connectionsToRemove.Add(connectionToRemove);
         }
 
@@ -198,9 +200,14 @@ public class RaymarchParticleBuffer : MonoBehaviour
     {
         for (int i = 0; i < _particleNodeConnections.Count; i++)
         {
-            _particleConnectionPos[i] = _particleNodeConnections[i].positions[0];
+            _particleConnectionPos[i] = _particleNodeConnections[i].originPos;
             _particleConnectionScale[i] = _particleNodeConnections[i].currentScale;
             _particleConnectionMatrices[i] = _particleNodeConnections[i].rotMatrix;
         }
+    }
+
+    public void EditorUpdate(float time)
+    {
+        SetRaymarchParticleBuffer(time);
     }
 }
