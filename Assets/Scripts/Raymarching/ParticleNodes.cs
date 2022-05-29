@@ -12,7 +12,7 @@ public static class ParticleSDFUtils
     private static List<float> _distances;
     private static ParticleSystem.Particle[] _particles;
 
-    const int maxConnections = 1;
+    const int maxConnections = 2;
 
     public static void AllocateResources(ParticleSystem _particeSystem, Transform _localTransform, int maxParticleSize)
     {
@@ -125,25 +125,22 @@ public class ParticleNodeConnection
 {
     public int id;
 
-    public Vector3 originPos;
+    public Vector3[] particleTransforms = new Vector3[2];
+    public float[] particleScales = new float[2];
     public Matrix4x4 rotMatrix;
-    public Vector3 currentScale;
+    public Vector4 currentScale;
 
-    private float[] particleScales = new float[2];
-    public float[] particleLife = new float[2];
+    public uint startSeed;
+    public uint endSeed;
 
+    private float[] particleLife = new float[2];
 
-    private uint startSeed;
-    private uint endSeed;
-    private Vector3[] positions = new Vector3[2];
     private Vector3 lastKnownStartPos;
     private Vector3 lastKnownEndPos;
 
     public float lerpValue;
 
     private float growth;
-    private float r1; // might end upbeing a Vector2?
-    private float r2; // might end upbeing a Vector2?
 
     // if I want to use cylinders where the origin is at the sphere i need to:
     /*
@@ -160,86 +157,44 @@ public class ParticleNodeConnection
     }
 
     // clean this up
-    public ParticleNodeConnection UpdateParticleNodeConnection(ParticleSystem.Particle[] _activeParticles, float _growthValue, float _stretchScale, float _distThreshold, float _minCapScale)
+    public ParticleNodeConnection UpdateParticleNodeConnection(ParticleSystem.Particle[] _activeParticles, float _growthValue, float _stretchScale, float _distThreshold, float _minScale, float _smoothness)
     {
-
-        var startQuery = _activeParticles.Where(p => p.randomSeed == startSeed).ToArray();
-        if (startQuery.Length > 0)
-        {
-            ParticleSystem.Particle startP = startQuery.First();
-            positions[0] = ParticleSDFUtils.ParticlePostionToWorld(startP);
-            particleScales[0] = ParticleSDFUtils.CurrentParticleSizeToLocalTransform(startP);
-            particleLife[0] = startP.remainingLifetime;
-        }
-        else
-        {
-            positions[0] = lastKnownStartPos;
-            particleScales[0] = _minCapScale;
-            particleLife[0] = 0;
-        }
-
-        var endQuery = _activeParticles.Where(p => p.randomSeed == endSeed).ToArray();
-        if (endQuery.Length > 0)
-        {
-            ParticleSystem.Particle endP = endQuery.First();
-            positions[1] = ParticleSDFUtils.ParticlePostionToWorld(endP);
-            particleScales[1] = ParticleSDFUtils.CurrentParticleSizeToLocalTransform(endP);
-            particleLife[1] = endP.remainingLifetime;
-        }
-        else
-        {
-            positions[1] = lastKnownEndPos;
-            particleScales[1] = _minCapScale;
-            particleLife[1] = 0;
-        }
+        SetParticleData(_activeParticles, startSeed, 0, _minScale, lastKnownStartPos);
+        SetParticleData(_activeParticles, endSeed, 1, _minScale, lastKnownEndPos);
 
         Vector3 dir;
-        // if (particleScales[0] > particleScales[1])
-        // {
-        //     dir = Vector3.Normalize(positions[1] - positions[0]);
-        //     originPos = positions[0];
-        // }
-        // else
-        // {
-        //     dir = Vector3.Normalize(positions[0] - positions[1]);
-        //     originPos = positions[1];
-        //     float flipScale = particleScales[0];
-        //     particleScales[0] = particleScales[1];
-        //     particleScales[1] = flipScale;
-        // }
-
-        dir = Vector3.Normalize(positions[0] - positions[1]);
+        dir = Vector3.Normalize(particleTransforms[0] - particleTransforms[1]);
         Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
         rotMatrix = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
 
-        float dist = Vector3.Distance(positions[0], positions[1]);
+        // offset based off smoothness and scale
+        // lets fix this so that the scale of our caps neatly matches the surface area of the particle where we intersect it
+        particleTransforms[0] -= dir * (particleScales[0] * 0.66f); // this should position us on the surface of the sphere??
+        particleTransforms[1] += dir * (particleScales[1] * 0.66f);
+
+        float dist = Vector3.Distance(particleTransforms[0], particleTransforms[1]);
         // half the distance so our length is correct
         dist /= 2;
         _distThreshold /= 2;
 
-        originPos = positions[0] - dir * dist; // use this is we want to have the Connections positioned between the spheres
 
         if (dist > _distThreshold)
         {
-            MDebug.LogPurple($"{id} dist is beyond our _distThreshold -  flip growth!");
-
             _growthValue = -_growthValue * 2; // flip when we need to remove
-            _distThreshold /= 2; // reduce max length 
+            // _distThreshold /= 2; // reduce max length 
         }
 
-        bool particle01Dying = particleLife[0] < 0.5f && particleScales[0] < _minCapScale * 2;
-        bool particle02Dying = particleLife[1] < 0.5f && particleScales[1] < _minCapScale * 2;
+        bool particle01Dying = particleLife[0] < 0.5f && particleScales[0] < _minScale * 2;
+        bool particle02Dying = particleLife[1] < 0.5f && particleScales[1] < _minScale * 2;
         if (particle01Dying || particle02Dying)
         {
-            MDebug.LogOrange($"{id} particles are dying -  flip growth!");
-
             _growthValue = -_growthValue * 2; // flip when we need to remove
-            _distThreshold /= 2; // reduce max length 
+            // _distThreshold /= 2; // reduce max length 
         }
 
         float targetDist = Mathf.Min(dist, _distThreshold);
 
-        ScaleLengthOnUpdate(_growthValue, targetDist, _stretchScale, _minCapScale);
+        ScaleLengthOnUpdate(_growthValue, targetDist, _stretchScale, _smoothness);
 
 
         if (currentScale.x < 0.001f) // when we completely shrink, remove this
@@ -253,27 +208,57 @@ public class ParticleNodeConnection
             return this;
         }
 
-        lastKnownStartPos = positions[0];
-        lastKnownEndPos = positions[1];
+        lastKnownStartPos = particleTransforms[0];
+        lastKnownEndPos = particleTransforms[1];
 
         return null;
     }
 
-    public void ScaleLengthOnUpdate(float _growthValue, float _dist, float _stretchScale, float _minCapScale)
+    void SetParticleData(ParticleSystem.Particle[] _activeParticles, uint seed, int index, float _minScale, Vector3 lastKnownPos)
     {
+        var particleQuery = _activeParticles.Where(p => p.randomSeed == seed).ToArray();
+        if (particleQuery.Length > 0)
+        {
+            ParticleSystem.Particle particle = particleQuery.First();
+            particleTransforms[index] = ParticleSDFUtils.ParticlePostionToWorld(particle);
+            float scale = ParticleSDFUtils.CurrentParticleSizeToLocalTransform(particle);
+            particleScales[index] = Mathf.Max(_minScale, scale);
+            particleLife[index] = particle.remainingLifetime;
+        }
+        else
+        {
+            MDebug.LogBlue($"{id} particle at {seed} no longer exists");
+            particleTransforms[index] = lastKnownPos;
+            particleScales[index] = _minScale;
+            particleLife[index] = 0;
+        }
+    }
+
+    public void ScaleLengthOnUpdate(float _growthValue, float _dist, float _stretchScale, float _smoothness)
+    {
+        // account for smoothness offset
         growth += _growthValue;
         growth = Mathf.Min(_dist, growth);
 
         lerpValue = growth / _dist; // 0->1 range
         lerpValue = Mathf.Clamp01(lerpValue);
+
         float length = Mathf.SmoothStep(0, _dist, lerpValue);
+        length /= 2;
+
+        float percentageOfParticle = 0.5f; // TODO: work out a better percentage for this based off union smoothness?? (smoothness * 2)??  -- we only want this to effect the final cap scales, not the mid
+        float targetR1 = particleScales[0] * percentageOfParticle * lerpValue;
+        float targetR2 = particleScales[1] * percentageOfParticle * lerpValue;
+        // float targetR1 = particleScales[0] * 0.25f * lerpValue;
+        // float targetR2 = particleScales[1] * 0.25f * lerpValue;
 
         float fullLengthStretch = lerpValue * (1 - _stretchScale); // this can be 0 -- we dont want that we want 1->0.5
-        float targetR1 = particleScales[0] * (lerpValue - fullLengthStretch);
-        targetR1 = Mathf.Min(_minCapScale, targetR1);
-        float targetR2 = particleScales[1] * (lerpValue - fullLengthStretch);
-        targetR2 = Mathf.Min(_minCapScale, targetR2);
+        float midR = Mathf.Min(targetR1, targetR2) * 0.66f * (lerpValue - fullLengthStretch);
 
-        currentScale = new Vector3(length, targetR1, targetR2); // getting negative values for scale?!
+        // targetR2 = Mathf.Max(_minCapScale, targetR2);
+        // targetR1 = Mathf.Max(_minCapScale, targetR1);
+        // midR = Mathf.Max(_minCapScale, midR);
+
+        currentScale = new Vector4(length, targetR1, targetR2, midR); // getting negative values for scale?!
     }
 }

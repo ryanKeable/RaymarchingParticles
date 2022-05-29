@@ -52,19 +52,24 @@ public class RaymarchParticleBufferEditor : Editor
 
     private void OnSceneGUI(SceneView _sceneView)
     {
+        return;
         Handles.color = Color.yellow;
         // Handles.SphereHandleCap(0, Vector3.zero, Quaternion.identity, .25f, EventType.Repaint); // world centre 
 
 
         for (int i = 0; i < theItem.Connections; i++)
         {
-            Handles.color = Color.cyan;
-            Vector3 sphereCapP = HandlePos(theItem.ConnectionPositions[i]);
-            Handles.SphereHandleCap(0, sphereCapP, Quaternion.identity, .25f, EventType.Repaint);
+            int flip = i % 2;
+            Handles.color = i == 0 ? Color.cyan : Color.green;
+            Vector3 sphereCapP1 = HandlePos(theItem.ConnectionPositions1[i]);
+            Vector3 sphereCapP2 = HandlePos(theItem.ConnectionPositions2[i]);
+
+            Handles.SphereHandleCap(0, sphereCapP1, Quaternion.identity, .25f, EventType.Repaint);
+            Handles.SphereHandleCap(0, sphereCapP2, Quaternion.identity, .25f, EventType.Repaint);
         }
     }
 
-    private Vector3 HandlePos(Vector4 _point)
+    private Vector3 HandlePos(Vector3 _point)
     {
         Transform trans = theItem.transform;
         Vector3 renderP = new Vector3(_point.x * trans.localScale.x, _point.y * trans.localScale.y, _point.z * trans.localScale.z);

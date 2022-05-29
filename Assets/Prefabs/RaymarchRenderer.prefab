@@ -98,433 +98,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleSystemToRender: {fileID: 6608446560685347202}
   unionSmoothness: 0.125
-  distThreshold: 0.5
-  minConnectionScale: 0.01
+  distThreshold: 3
+  minConnectionScale: 0.025
   connectionGrowthValue: 0.5
+  connectionStretchScale: 0.66
   renderMat: {fileID: 2100000, guid: b9bb1065bda5c6d40988cb0a0bbe5688, type: 2}
-  _particleNodeConnections:
-  - id: 1536962243
-    originPos: {x: 0.11516099, y: 0.46417704, z: -0.048226774}
-    rotMatrix:
-      e00: -0.15174437
-      e01: -0.9510425
-      e02: 0.26924315
-      e03: 0
-      e10: 0.9510425
-      e11: -0.21468532
-      e12: -0.22232507
-      e13: 0
-      e20: 0.26924315
-      e21: 0.22232507
-      e22: 0.93705904
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.09593915, y: -0.48911747, z: -0.49151996}
-    particleLife:
-    - 2.061078
-    - 1.7851992
-    debugDistance: 0.09593915
-    length: 0.09593915
-    growth: 0.09593915
-    lerpValue: 1
-  - id: -709601064
-    originPos: {x: -0.059790302, y: 0.31655657, z: 0.059736233}
-    rotMatrix:
-      e00: 0.99804056
-      e01: -0.060220685
-      e02: -0.016986206
-      e03: 0
-      e10: 0.060220685
-      e11: 0.8507895
-      e12: 0.5220448
-      e13: 0
-      e20: -0.016986206
-      e21: -0.5220448
-      e22: 0.85274893
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.06254603, y: -0.49114722, z: -0.49151996}
-    particleLife:
-    - 2.3196566
-    - 2.061078
-    debugDistance: 0.06254603
-    length: 0.06254603
-    growth: 0.06254603
-    lerpValue: 1
-  - id: -679020460
-    originPos: {x: 0.039196894, y: 0.4052021, z: -0.020106465}
-    rotMatrix:
-      e00: 0.17848456
-      e01: -0.9775328
-      e02: 0.11212932
-      e03: 0
-      e10: 0.9775328
-      e11: 0.16317993
-      e12: -0.13342427
-      e13: 0
-      e20: 0.11212932
-      e21: 0.13342427
-      e22: 0.9846954
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.054484274, y: -0.48574522, z: -0.49151996}
-    particleLife:
-    - 1.6342875
-    - 2.061078
-    debugDistance: 0.054484274
-    length: 0.054484274
-    growth: 0.054484274
-    lerpValue: 1
-  - id: 251293324
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: -0.1544838
-      e01: 0.9283443
-      e02: 0.33810005
-      e03: 0
-      e10: -0.9283443
-      e11: -0.25349915
-      e12: 0.27187324
-      e13: 0
-      e20: 0.33810005
-      e21: -0.27187324
-      e22: 0.90098464
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.09670889, y: -0.49151996, z: -0.4916042}
-    particleLife:
-    - 2.13516
-    - 2.061078
-    debugDistance: 0.09670889
-    length: 0.09670889
-    growth: 0.09670889
-    lerpValue: 1
-  - id: 548001672
-    originPos: {x: 0.057763785, y: 0.46394128, z: 0.007222916}
-    rotMatrix:
-      e00: -0.29616594
-      e01: -0.94589657
-      e02: -0.13253467
-      e03: 0
-      e10: 0.94589657
-      e11: -0.30971777
-      e12: 0.09671916
-      e13: 0
-      e20: -0.13253467
-      e21: -0.09671916
-      e22: 0.98644817
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.06612098, y: -0.48935986, z: -0.49151996}
-    particleLife:
-    - 1.9215143
-    - 2.061078
-    debugDistance: 0.06612098
-    length: 0.06612098
-    growth: 0.06612098
-    lerpValue: 1
-  - id: -1581095584
-    originPos: {x: -0.091918364, y: 0.51624167, z: -0.041121315}
-    rotMatrix:
-      e00: 0.38270432
-      e01: 0.23927048
-      e02: -0.8923491
-      e03: 0
-      e10: -0.23927048
-      e11: -0.9072561
-      e12: -0.34588417
-      e13: 0
-      e20: -0.8923491
-      e21: 0.34588417
-      e22: -0.28996038
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.051395673, y: -0.48973954, z: -0.49151996}
-    particleLife:
-    - 1.794812
-    - 2.061078
-    debugDistance: 0.051395673
-    length: 0.051395673
-    growth: 0.051395673
-    lerpValue: 1
-  - id: -1344685743
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.2881205
-      e01: 0.94682235
-      e02: -0.14322741
-      e03: 0
-      e10: -0.94682235
-      e11: 0.2593037
-      e12: -0.19049701
-      e13: 0
-      e20: -0.14322741
-      e21: 0.19049701
-      e22: 0.9711832
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0011414413, y: -0.033074416, z: -0.033222698}
-    particleLife:
-    - 2.8546746
-    - 2.061078
-    debugDistance: 0.087975815
-    length: 0.0011414413
-    growth: 0.0059198993
-    lerpValue: 0.067290075
-  - id: -659820934
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.12818879
-      e01: 0.91033095
-      e02: -0.39352947
-      e03: 0
-      e10: -0.91033095
-      e11: -0.049447656
-      e12: -0.41091704
-      e13: 0
-      e20: -0.39352947
-      e21: 0.41091704
-      e22: 0.82236356
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0013442879, y: -0.039299503, z: -0.03957276}
-    particleLife:
-    - 3.2470083
-    - 2.061078
-    debugDistance: 0.074040346
-    length: 0.0013442879
-    growth: 0.0059198993
-    lerpValue: 0.07995505
-  - id: -592636316
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.9592004
-      e01: -0.2751141
-      e02: -0.06516815
-      e03: 0
-      e10: 0.2751141
-      e11: 0.85510904
-      e12: 0.43943238
-      e13: 0
-      e20: -0.06516815
-      e21: -0.43943238
-      e22: 0.89590865
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0026910251, y: -0.076025456, z: -0.076393545}
-    particleLife:
-    - 2.4715877
-    - 2.061078
-    debugDistance: 0.04180464
-    length: 0.0026910251
-    growth: 0.0064660995
-    lerpValue: 0.1546742
-  - id: -1557207121
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.43698466
-      e01: 0.066836335
-      e02: 0.8969824
-      e03: 0
-      e10: -0.066836335
-      e11: -0.9920659
-      e12: 0.10648203
-      e13: 0
-      e20: 0.8969824
-      e21: -0.10648203
-      e22: -0.42905056
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0033635192, y: -0.06806189, z: -0.06864345}
-    particleLife:
-    - 3.362098
-    - 2.061078
-    debugDistance: 0.06441867
-    length: 0.0033635192
-    growth: 0.0089202
-    lerpValue: 0.13847227
-  - id: 1764928178
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.6320071
-      e01: 0.7103287
-      e02: -0.30983898
-      e03: 0
-      e10: -0.7103287
-      e11: 0.37113196
-      e12: -0.59807545
-      e13: 0
-      e20: -0.30983898
-      e21: 0.59807545
-      e22: 0.7391249
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0038301547, y: -0.07876399, z: -0.079029955}
-    particleLife:
-    - 2.2879243
-    - 2.061078
-    debugDistance: 0.05566575
-    length: 0.0038301547
-    growth: 0.0089202
-    lerpValue: 0.16024576
-  - id: -2098582448
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: -0.070235014
-      e01: 0.7219927
-      e02: -0.6883267
-      e03: 0
-      e10: -0.7219927
-      e11: -0.51293564
-      e12: -0.46435302
-      e13: 0
-      e20: -0.6883267
-      e21: 0.46435302
-      e22: 0.5572994
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0035203763, y: -0.071616314, z: -0.07193737}
-    particleLife:
-    - 2.2959392
-    - 2.061078
-    debugDistance: 0.061221477
-    length: 0.0035203763
-    growth: 0.0089202
-    lerpValue: 0.14570378
-  - id: -316888160
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: -0.29024136
-      e01: 0.7624018
-      e02: -0.5783628
-      e03: 0
-      e10: -0.7624018
-      e11: -0.54949796
-      e12: -0.34175378
-      e13: 0
-      e20: -0.5783628
-      e21: 0.34175378
-      e22: 0.7407434
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0043168506, y: -0.09036436, z: -0.091175795}
-    particleLife:
-    - 3.5214448
-    - 2.061078
-    debugDistance: 0.048519753
-    length: 0.0043168506
-    growth: 0.0089202
-    lerpValue: 0.18384677
-  - id: -469652376
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.44889772
-      e01: -0.028678976
-      e02: -0.89312285
-      e03: 0
-      e10: 0.028678976
-      e11: -0.9985076
-      e12: 0.046477485
-      e13: 0
-      e20: -0.89312285
-      e21: -0.046477485
-      e22: -0.44740534
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0033985553, y: -0.06885216, z: -0.06915546}
-    particleLife:
-    - 2.507319
-    - 2.061078
-    debugDistance: 0.06367929
-    length: 0.0033985553
-    growth: 0.0089202
-    lerpValue: 0.14008008
-  - id: 256286887
-    originPos: {x: -0.06732343, y: 0.4229836, z: -0.0055674165}
-    rotMatrix:
-      e00: 0.036175728
-      e01: -0.17090492
-      e02: 0.9846232
-      e03: 0
-      e10: 0.17090492
-      e11: -0.9696953
-      e12: -0.17459299
-      e13: 0
-      e20: 0.9846232
-      e21: 0.17459299
-      e22: -0.0058710575
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    currentScale: {x: 0.0063579464, y: -0.13471077, z: -0.13560858}
-    particleLife:
-    - 2.9463737
-    - 2.061078
-    debugDistance: 0.034522228
-    length: 0.0063579464
-    growth: 0.0094615
-    lerpValue: 0.2740698
+  _particleNodeConnections: []
   _particleTransform:
-  - {x: -0.06732343, y: 0.4229836, z: -0.0055674165, w: 0.011306716}
-  - {x: 0.11516099, y: 0.46417704, z: -0.048226774, w: 0.014510037}
-  - {x: 0.09927149, y: 0.46860853, z: 0.027950842, w: 0.008368574}
-  - {x: -0.058712415, y: 0.29516846, z: -0.019286279, w: 0.0057069007}
-  - {x: -0.059790302, y: 0.31655657, z: 0.059736233, w: 0.011803703}
-  - {x: 0.039196894, y: 0.4052021, z: -0.020106465, w: 0.01900637}
-  - {x: 0.011758521, y: 0.46430227, z: 0.061017215, w: 0.009093722}
-  - {x: 0.11223486, y: 0.37395236, z: -0.05815253, w: 0.011194376}
-  - {x: -0.07912347, y: 0.3560315, z: 0.006487261, w: 0.006938876}
-  - {x: 0.02107948, y: 0.36017823, z: 0.05128933, w: 0.00836875}
-  - {x: 0.0066596568, y: 0.3696606, z: 0.027596196, w: 0.0054218466}
-  - {x: 0.057763785, y: 0.46394128, z: 0.007222916, w: 0.014186853}
-  - {x: -0.091918364, y: 0.51624167, z: -0.041121315, w: 0.013680606}
-  - {x: -0.070975944, y: 0.29581508, z: -0.011486723, w: 0.008419759}
-  - {x: 0.067478985, y: 0.41566136, z: 0.055281453, w: 0.006749888}
-  - {x: -0.09032552, y: 0.49447864, z: -0.04230804, w: 0.008133694}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6177546924250485906
 GameObject:
   m_ObjectHideFlags: 0
@@ -551,7 +147,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6177546924250485906}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0.543, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 3732663233949496708}
@@ -640,8 +236,8 @@ ParticleSystem:
     startLifetime:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 4
-      minScalar: 2
+      scalar: 5
+      minScalar: 4
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -693,7 +289,7 @@ ParticleSystem:
     startSpeed:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 0.5
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -809,8 +405,8 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.25
-      minScalar: 0.15
+      scalar: 1
+      minScalar: 1
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -1131,8 +727,8 @@ ParticleSystem:
     rotation3D: 0
     gravityModifier:
       serializedVersion: 2
-      minMaxState: 3
-      scalar: 1.2
+      minMaxState: 0
+      scalar: 0
       minScalar: 0.8
       maxCurve:
         serializedVersion: 2
@@ -1272,7 +868,7 @@ ParticleSystem:
     sphericalDirectionAmount: 0
     randomPositionAmount: 0
     radius:
-      value: 1
+      value: 3
       mode: 0
       spread: 0
       speed:
@@ -1391,7 +987,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 3
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -1501,7 +1097,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 16
+        scalar: 0
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -1552,7 +1148,7 @@ ParticleSystem:
           m_PostInfinity: 2
           m_RotationOrder: 4
       cycleCount: 1
-      repeatInterval: 2
+      repeatInterval: 6
       probability: 1
   SizeModule:
     enabled: 1
