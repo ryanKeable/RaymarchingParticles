@@ -181,10 +181,10 @@ float GetDistance(float3 p)
     // float intersections = opIntersection(connections, spheres);
     // return intersections;
 
-    float subtractions = opSmoothSubtraction(connections, spheres, _UnionSmoothness);
+    // float subtractions = opSmoothSubtraction(connections, spheres, _UnionSmoothness);
     // return subtractions;
 
-    dist = opSmoothUnion(subtractions, connections, _UnionSmoothness); // this division is causing some errors around the visual edges?
+    dist = opSmoothUnion(spheres, connections, _UnionSmoothness); // this division is causing some errors around the visual edges?
     return dist;
 }
 

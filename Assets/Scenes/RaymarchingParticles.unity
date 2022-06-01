@@ -204,35 +204,35 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[0].w
-      value: 0.12397132
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[0].x
-      value: -0.1057118
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[0].y
-      value: -0.040137984
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[0].z
-      value: -0.21599936
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[1].w
-      value: 0.123136684
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[1].x
-      value: 0.5273873
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[1].y
-      value: -0.094964184
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[1].z
-      value: 0.21476361
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleTransform.Array.data[2].w
@@ -2578,6 +2578,10 @@ PrefabInstance:
       propertyPath: _particleNodeConnections.Array.data[13].particleTransforms.Array.data[1].z
       value: 0.18820527
       objectReference: {fileID: 0}
+    - target: {fileID: 4208718908723766692, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6177546924250485906, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: m_Name
       value: TheParticleSystem
@@ -2600,7 +2604,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
-      value: 0
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: EmissionModule.m_Bursts.Array.data[0].countCurve.scalar
