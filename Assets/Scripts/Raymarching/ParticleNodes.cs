@@ -33,8 +33,9 @@ public class ParticleNode
     private float minScale;
     private float smoothness;
 
-    const float decayPercent = 0.5f;
+    const float decayPercent = 0.25f;
 
+    public int DEBUG_connectionsCount;
 
 
     [Serializable]
@@ -62,7 +63,7 @@ public class ParticleNode
         public Vector3 TargetPos { get => _targetPos; set => _targetPos = value; }
         public Vector4 Scale { get => _scale; set => _scale = value; }
         public float Growth { get => _growth; set => _growth = value; }
-        public float DebugLerpValue { get => _lerpValue; set => _lerpValue = value; }
+        public float LerpValue { get => _lerpValue; set => _lerpValue = value; }
     }
 
 
@@ -150,10 +151,12 @@ public class ParticleNode
             return;
         }
 
+        AdjustNodeScale();
         UpdateParticleConnections(_growthValue);
 
         if (CheckForFinishedNodeAfterUpdate()) nodeToRemove = this;
 
+        DEBUG_connectionsCount = connectionsCount;
     }
 
     public Vector4 ParticleNodeTransformData()
@@ -198,7 +201,7 @@ public class ParticleNode
     private bool IsDecaying(ParticleSystem.Particle? _particle)
     {
         if (_particle == null) return false;
-        return !isMature && particleRemainingLife < 0.5f;
+        return ScalePercent() < 1 - decayPercent && particleRemainingLife < 0.5f;
     }
 
     private float ScalePercent()
@@ -219,6 +222,23 @@ public class ParticleNode
         {
             RemoveMyConnection(c);
         }
+    }
+
+    private void AdjustNodeScale()
+    {
+        if (connectionsCount == 0) return;
+        float scalar = 0.11f * Mathf.Min(connectionsCount, 3); // .11 .22 .33
+        float lerpAgg = 0;
+
+        foreach (float lerpValue in myConnections.Select(c => c.LerpValue))
+        {
+            lerpAgg += lerpValue;
+        }
+        lerpAgg /= connectionsCount;
+        scalar *= lerpAgg;
+        scalar = 1 - scalar;
+
+        particleScale *= scalar;
     }
 
     private void UpdateParticleConnections(float _growthValue)
@@ -268,7 +288,7 @@ public class ParticleNode
         bool flipGrowth = decayConnection || breakConnection;
         float lerpValue = LerpValue(connection, _growthValue, targetDist, flipGrowth);
         // if (decayConnection) lerpValue *= ScalePercent(); // shrink based on particle's current state of decay
-        connection.DebugLerpValue = lerpValue;
+        connection.LerpValue = lerpValue;
         float length = LerpLength(dist, lerpValue) / 2;
         Vector3 capScales = LerpConnectionScale(refScale, lerpValue);
 

@@ -97,60 +97,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   particleSystemToRender: {fileID: 6608446560685347202}
-  unionSmoothness: 0.15
+  unionSmoothness: 0.1
   distThreshold: 3
-  minConnectionScale: 0.025
-  connectionGrowthValue: 0.5
+  minConnectionScale: 1
+  connectionGrowthValue: 1.5
   connectionStretchScale: 0.8
   renderMat: {fileID: 2100000, guid: b9bb1065bda5c6d40988cb0a0bbe5688, type: 2}
-  _particleNodes:
-  - id: 2373251223
-    index: 0
-    particlePosition: {x: 0.42709672, y: -0.37497783, z: 0.19603303}
-    particleScale: 0.0009492823
-    particleRemainingLife: 0.13025028
-    isAlive: 1
-    isMature: 0
-    isDecaying: 1
-    connectionIDs: 
-  - id: 1500621275
-    index: 1
-    particlePosition: {x: 0.06632738, y: 0.37458003, z: -0.2788116}
-    particleScale: 0.08164964
-    particleRemainingLife: 0.85679
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: c27a4b3925ebf8d4447de39f
-  - id: 3573082917
-    index: 2
-    particlePosition: {x: -0.2442922, y: 0.09746773, z: 0.2225881}
-    particleScale: 0.071808636
-    particleRemainingLife: 4.6292925
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: dba97159c27a4b39447de39f
-  - id: 961247938
-    index: 3
-    particlePosition: {x: -0.20689124, y: -0.09659357, z: -0.273803}
-    particleScale: 0.07753506
-    particleRemainingLife: 4.3600354
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: dba9715925ebf8d4447de39f
-  - id: 2682486084
-    index: 4
-    particlePosition: {x: 0.093234256, y: 0.10604367, z: 0.22647862}
-    particleScale: 0.0706508
-    particleRemainingLife: 4.700674
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: dba9715925ebf8d4c27a4b39
-  _particleNodesCount: 5
-  _particleConnectionsCount: 6
+  _particleNodes: []
+  _particleNodesCount: 0
+  _particleConnectionsCount: 16
 --- !u!1 &6177546924250485906
 GameObject:
   m_ObjectHideFlags: 0
@@ -199,7 +154,7 @@ ParticleSystem:
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 1
   looping: 1
-  prewarm: 0
+  prewarm: 1
   playOnAwake: 1
   useUnscaledTime: 0
   autoRandomSeed: 1
@@ -1017,7 +972,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.5
+      scalar: 2
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -1127,7 +1082,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 2
+        scalar: 0
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -1202,12 +1157,12 @@ ParticleSystem:
         - serializedVersion: 3
           time: 0.5047618
           value: 1
-          inSlope: -0.011425262
-          outSlope: -0.011425262
+          inSlope: -0.01819323
+          outSlope: -0.01819323
           tangentMode: 0
           weightedMode: 3
-          inWeight: 0.7069183
-          outWeight: 0.74102527
+          inWeight: 0.49301097
+          outWeight: 0.5935206
         - serializedVersion: 3
           time: 1
           value: 0
@@ -1703,7 +1658,7 @@ ParticleSystem:
     flipU: 0
     flipV: 0
   VelocityModule:
-    enabled: 0
+    enabled: 1
     x:
       serializedVersion: 2
       minMaxState: 0
@@ -1866,7 +1821,7 @@ ParticleSystem:
     orbitalX:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 1
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -1919,7 +1874,7 @@ ParticleSystem:
     orbitalY:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 1
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -1972,7 +1927,7 @@ ParticleSystem:
     orbitalZ:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 1
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -2236,9 +2191,9 @@ ParticleSystem:
         m_RotationOrder: 4
     speedModifier:
       serializedVersion: 2
-      minMaxState: 0
-      scalar: 1
-      minScalar: 1
+      minMaxState: 3
+      scalar: 0.5
+      minScalar: 0.2
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -4966,7 +4921,7 @@ ParticleSystemRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6177546924250485906}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
