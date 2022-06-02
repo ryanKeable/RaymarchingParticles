@@ -41,7 +41,7 @@ public static class Utils
         _allOtherNodes.Remove(_thisNode);
 
         // filter existing nodes for nodes that we can potentially make connections to
-        var acceptableNodeQuery = _allOtherNodes.Where(n => n.connectionsCount < maxConnections).ToArray();
+        var acceptableNodeQuery = _allOtherNodes.Where(n => n.myConnectionsCount < maxConnections).ToArray();
         acceptableNodeQuery = acceptableNodeQuery.Where(n => n.isMature == true).ToArray();
 
         // gather close particles within the dist threshold --  < dist threshold is clamping the distance >.<
@@ -104,17 +104,24 @@ public static class Utils
 
     public static float CurrentParticleSizeToLocalTransform(ParticleSystem.Particle _particle)
     {
-        return Mathf.Min(_particle.GetCurrentSize(_system), _particle.startSize) / _transform.localScale.x;
+        return LocalTransformScale(Mathf.Min(_particle.GetCurrentSize(_system), _particle.startSize)); ;
     }
 
     public static float ParticleStartSizeToLocalTransform(ParticleSystem.Particle _particle)
     {
-        return _particle.startSize / _transform.localScale.x;
+        return LocalTransformScale(_particle.startSize);
     }
+
+    public static float LocalTransformScale(float _value)
+    {
+        return _value / _transform.localScale.x;
+    }
+
     public static float GetParticleSize(ParticleSystem.Particle _particle)
     {
         return _particle.GetCurrentSize(_system);
     }
+
 
     public static float StartParticleSizeToLocalTransform(ParticleSystem.Particle _particle)
     {

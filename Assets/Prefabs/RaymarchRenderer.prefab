@@ -53,7 +53,6 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -97,15 +96,158 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   particleSystemToRender: {fileID: 6608446560685347202}
-  unionSmoothness: 0.1
+  unionSmoothness: 0.2
   distThreshold: 3
-  minConnectionScale: 1
-  connectionGrowthValue: 1.5
+  minConnectionScale: 0.05
+  connectionGrowthValue: 1
   connectionStretchScale: 0.8
   renderMat: {fileID: 2100000, guid: b9bb1065bda5c6d40988cb0a0bbe5688, type: 2}
-  _particleNodes: []
-  _particleNodesCount: 0
-  _particleConnectionsCount: 16
+  _particleNodes:
+  - id: 3193718118
+    index: 0
+    particlePosition: {x: -0.2093275, y: 0.19932689, z: 0.1511734}
+    particleScale: 0.0040366147
+    particleRemainingLife: 0.25700513
+    isAlive: 1
+    isMature: 0
+    isDecaying: 1
+    connectionIDs: 
+    connectionScalar: 1
+  - id: 4244333774
+    index: 1
+    particlePosition: {x: -0.24660642, y: 0.49234992, z: 0.13940641}
+    particleScale: 0.09046706
+    particleRemainingLife: 1.4190696
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: 3b442a11a66b0d57a790dcd2
+    connectionScalar: 0.66733
+  - id: 4201260354
+    index: 2
+    particlePosition: {x: -0.37405825, y: -0.28161186, z: 0.07280887}
+    particleScale: 0.06614353
+    particleRemainingLife: 0.88759017
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: 3b442a11a66b0d57d035b91c
+    connectionScalar: 0.665504
+  - id: 3537670311
+    index: 3
+    particlePosition: {x: 0.221545, y: -0.15100676, z: 0.28961483}
+    particleScale: 0.12135486
+    particleRemainingLife: 2.0405235
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: a66b0d57ce64fbfcd035b91c3fd50b34
+    connectionScalar: 0.56048894
+  - id: 287982651
+    index: 4
+    particlePosition: {x: 0.065358415, y: -0.4037557, z: -0.23717622}
+    particleScale: 0.12270517
+    particleRemainingLife: 1.8033468
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: ce64fbfc42256afad035b91c3fd50b3420c27d75
+    connectionScalar: 0.45617115
+  - id: 1460497318
+    index: 5
+    particlePosition: {x: 0.4313678, y: -0.0032560884, z: -0.19891398}
+    particleScale: 0.12375636
+    particleRemainingLife: 2.1972349
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: ce64fbfc42256afaa790dcd23fd50b3420c27d7501aaf4cb
+    connectionScalar: 0.35080078
+  - id: 481899984
+    index: 6
+    particlePosition: {x: 0.18893145, y: 0.1116782, z: 0.3330793}
+    particleScale: 0.06798281
+    particleRemainingLife: 4.490715
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: 42256afaa790dcd23b442a1120c27d7501aaf4cb
+    connectionScalar: 0.46162415
+  - id: 873190719
+    index: 7
+    particlePosition: {x: 0.11271641, y: -0.10938977, z: 0.353355}
+    particleScale: 0.051612884
+    particleRemainingLife: 3.5972488
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: a790dcd23b442a11a66b0d5701aaf4cb
+    connectionScalar: 0.57260656
+  - id: 3421809153
+    index: 8
+    particlePosition: {x: -0.3453163, y: -0.024417011, z: 0.23854722}
+    particleScale: 0.036859103
+    particleRemainingLife: 4.463572
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: a66b0d57d035b91c3fd50b34
+    connectionScalar: 0.68163204
+  - id: 1971175968
+    index: 9
+    particlePosition: {x: -0.15324838, y: 0.12848578, z: 0.37809634}
+    particleScale: 0.04783227
+    particleRemainingLife: 3.7213423
+    isAlive: 1
+    isMature: 1
+    isDecaying: 0
+    connectionIDs: 3b442a11a66b0d57d035b91c
+    connectionScalar: 0.6790303
+  - id: 1588186262
+    index: 10
+    particlePosition: {x: -0.12930325, y: 0.15676376, z: -0.2528075}
+    particleScale: 0.0065736375
+    particleRemainingLife: 5.3255477
+    isAlive: 1
+    isMature: 0
+    isDecaying: 0
+    connectionIDs: 
+    connectionScalar: 1
+  _particleConnections:
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 3, y: 4, z: 5, w: 3}
+  - {x: 3, y: 4, z: 5, w: 6}
+  - {x: 3, y: 5, z: 6, w: 7}
+  - {x: 3, y: 6, z: 7, w: 9}
+  - {x: 3, y: 7, z: 9, w: 8}
+  - {x: 2, y: 9, z: 8, w: 0}
+  - {x: 1, y: 8, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  _particleNodesCount: 11
+  _particleConnectionsCount: 18
 --- !u!1 &6177546924250485906
 GameObject:
   m_ObjectHideFlags: 0
@@ -145,19 +287,19 @@ ParticleSystem:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6177546924250485906}
-  serializedVersion: 8
+  serializedVersion: 7
   lengthInSec: 5
   simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
-  emitterVelocityMode: 1
   looping: 1
   prewarm: 1
   playOnAwake: 1
   useUnscaledTime: 0
   autoRandomSeed: 1
+  useRigidbodyForVelocity: 1
   startDelay:
     serializedVersion: 2
     minMaxState: 0
@@ -707,7 +849,6 @@ ParticleSystem:
         m_RotationOrder: 4
     randomizeRotationDirection: 0
     maxNumParticles: 16
-    customEmitterVelocity: {x: 0, y: 0, z: 0}
     size3D: 0
     rotation3D: 0
     gravityModifier:
@@ -1082,7 +1223,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 0
+        scalar: 2
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -1133,7 +1274,7 @@ ParticleSystem:
           m_PostInfinity: 2
           m_RotationOrder: 4
       cycleCount: 1
-      repeatInterval: 6
+      repeatInterval: 1
       probability: 1
   SizeModule:
     enabled: 1
@@ -2139,7 +2280,7 @@ ParticleSystem:
     radial:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0
+      scalar: 1
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -4925,7 +5066,6 @@ ParticleSystemRenderer:
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0

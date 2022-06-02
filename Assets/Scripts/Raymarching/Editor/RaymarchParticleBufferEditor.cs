@@ -27,7 +27,7 @@ public class RaymarchParticleBufferEditor : Editor
 
     public void Update()
     {
-        if (timeSinceStartUp == 0f)
+        if (!Application.isPlaying && timeSinceStartUp == 0f)
         {
             ResetEditorDeltaTime();
         }
@@ -35,14 +35,13 @@ public class RaymarchParticleBufferEditor : Editor
         double editorDeltaTime = (EditorApplication.timeSinceStartup - timeSinceStartUp);
         timeSinceStartUp = EditorApplication.timeSinceStartup;
 
-        theItem.SetRaymarchParticleBuffer((float)editorDeltaTime);
+        if (!Application.isPlaying) theItem.SetRaymarchParticleBuffer((float)editorDeltaTime);
     }
 
     void ResetEditorDeltaTime()
     {
         timeSinceStartUp = EditorApplication.timeSinceStartup;
     }
-
 
     public override void OnInspectorGUI()
     {
@@ -53,12 +52,13 @@ public class RaymarchParticleBufferEditor : Editor
         base.DrawDefaultInspector();
     }
 
-
     private void OnSceneGUI(SceneView _sceneView)
     {
+
+        if (UnityEditor.EditorApplication.isCompiling) theItem.Clear();
+
         Handles.color = Color.yellow;
         // Handles.SphereHandleCap(0, Vector3.zero, Quaternion.identity, .25f, EventType.Repaint); // world centre 
-
 
         for (int i = 0; i < theItem._particleNodes.Count; i++)
         {

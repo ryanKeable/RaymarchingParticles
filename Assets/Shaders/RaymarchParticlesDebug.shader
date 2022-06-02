@@ -1,4 +1,4 @@
-Shader "Raymarch/RaymarchParticles"
+Shader "Raymarch/RaymarchParticlesDebug"
 {
     Properties
     {
@@ -25,8 +25,7 @@ Shader "Raymarch/RaymarchParticles"
             #pragma fragment fragment
 
             #include "RaymarchInput.hlsl"
-            #include "RaymarchEngine.hlsl"
-
+            #include "RaymarchEngineDebug.hlsl"
             
             Varyings vertex(Attributes input)
             {
@@ -52,7 +51,6 @@ Shader "Raymarch/RaymarchParticles"
             half4 fragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-
 
                 half3 color = RenderRaymarch(input.uv, input.rayOrigin, input.positionOS);
 

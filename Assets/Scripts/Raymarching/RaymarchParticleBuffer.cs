@@ -27,16 +27,16 @@ public class RaymarchParticleBuffer : MonoBehaviour
     public Material renderMat;
 
 
-    [SerializeField]
     public List<ParticleNode> _particleNodes = new List<ParticleNode>();
 
     private ParticleSystem.Particle[] _particles;
     private ParticleSystem.Particle[] _activeParticles;
 
     private Vector4[] _particleTransform;
+    private Vector4[] _particleConnectionPos01 = new Vector4[32];
 
-    private Vector4[] _particleConnectionPos1 = new Vector4[32];
-    private Vector4[] _particleConnectionPos2 = new Vector4[32];
+    private Vector4[] _particleConnectionPos02 = new Vector4[32];
+    [SerializeField]
     private Vector4[] _particleConnectionScale = new Vector4[32];
     private Matrix4x4[] _particleConnectionMatrices = new Matrix4x4[32];
 
@@ -46,14 +46,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private int _particlesCount;
     private const int MaxParticles = 16;
 
-    public Vector4[] ConnectionPositions1 { get => _particleConnectionPos1; }
-    public Vector4[] ConnectionPositions2 { get => _particleConnectionPos2; }
     public int Connections { get => _particleNodes.Count; }
 
     private void OnEnable()
     {
         Clear();
     }
+
 
     private void LateUpdate()
     {
@@ -69,14 +68,23 @@ public class RaymarchParticleBuffer : MonoBehaviour
     public void Clear()
     {
         _particleNodes = new List<ParticleNode>();
-        _particleConnectionPos1 = new Vector4[32];
-        _particleConnectionPos2 = new Vector4[32];
-        _particleConnectionScale = new Vector4[32];
-        _particleConnectionMatrices = new Matrix4x4[32];
-        _particleTransform = new Vector4[MaxParticles];
+
+        ClearArrays();
 
         _particlesCount = 0;
         _particleNodesCount = 0;
+
+        SetParticleMaterialProps();
+        SetConnectionMaterialProps();
+    }
+
+    void ClearArrays()
+    {
+        _particleConnectionScale = new Vector4[32];
+        _particleConnectionMatrices = new Matrix4x4[32];
+        _particleConnectionPos01 = new Vector4[32];
+        _particleConnectionPos02 = new Vector4[32];
+        _particleTransform = new Vector4[MaxParticles];
     }
 
     // this only renders correctly after a re-compile?
@@ -107,26 +115,24 @@ public class RaymarchParticleBuffer : MonoBehaviour
         SetParticleConnectionData(time);
 
 
-        SetConnectionMaterialProps();
         SetParticleMaterialProps();
+        SetConnectionMaterialProps();
     }
 
     private void SetParticleMaterialProps()
     {
         renderMat.SetVectorArray("_Particle", _particleTransform);
         renderMat.SetInt("_ParticleCount", _particleNodesCount);
-        renderMat.SetFloat("_UnionSmoothness", unionSmoothness);
-        renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
-
     }
 
     private void SetConnectionMaterialProps()
     {
+        renderMat.SetVectorArray("_ConnectionPos01", _particleConnectionPos01);
+        renderMat.SetVectorArray("_ConnectionPos02", _particleConnectionPos02);
         renderMat.SetMatrixArray("_ConnectionRotationMatrix", _particleConnectionMatrices.ToArray());
-        renderMat.SetVectorArray("_ConnectionPos1", _particleConnectionPos1);
-        renderMat.SetVectorArray("_ConnectionPos2", _particleConnectionPos2);
         renderMat.SetVectorArray("_ConnectionScale", _particleConnectionScale);
-
+        renderMat.SetFloat("_UnionSmoothness", unionSmoothness);
+        renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
         renderMat.SetInt("_ConnectionCount", _particleConnectionsCount);
     }
 
@@ -189,14 +195,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
         }
     }
 
-
     private void SetParticleConnectionData(float time)
     {
         if (_particleNodesCount == 0) return;
         FindNewConnections();
         UpdateNodesAndConnections(time);
         SetNodeIndexes();
-        SetConnectionData();
+        SetShaderArrays();
     }
 
     private void FindNewConnections()
@@ -207,10 +212,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
         }
     }
 
+    // we need to know the current scale of all the particles AFTER the connections have been established
+    // this happens here because we lerp the fucker over time??
     private void UpdateNodesAndConnections(float time)
     {
         float growthvalue = time * connectionGrowthValue;
         _particleConnectionsCount = 0;
+
         List<ParticleNode> nodesToRemove = new List<ParticleNode>();
         foreach (ParticleNode node in _particleNodes)
         {
@@ -219,45 +227,25 @@ public class RaymarchParticleBuffer : MonoBehaviour
             {
                 nodesToRemove.Add(nodeToRemove);
             }
+        }
 
-            _particleConnectionsCount += node.connectionsCount;
+        _particleNodes.RemoveAll(n => nodesToRemove.Contains(n));
+        nodesToRemove = new List<ParticleNode>(); // reset for connections
+
+        foreach (ParticleNode node in _particleNodes)
+        {
+            node.UpdateNodeConnections(growthvalue, out ParticleNode nodeToRemove);
+            if (nodeToRemove != null)
+            {
+                nodesToRemove.Add(nodeToRemove);
+            }
+
+            _particleConnectionsCount += node.myConnectionsCount;
         }
 
         _particleNodes.RemoveAll(n => nodesToRemove.Contains(n));
         _particleNodesCount = _particleNodes.Count;
     }
-
-    private void UpdateParticleData()
-    {
-        // for (int i = 0; i < _particlesCount; i++)
-        // {
-        //     Vector3 position = new Vector3(_particles[i].position.x, _particles[i].position.y, _particles[i].position.z);
-        //     position = transform.InverseTransformPoint(position);
-
-        //     var scaleQuery = _particleNodeConnections.Where(c => c.startSeed == _activeParticles[i].randomSeed || c.endSeed == _activeParticles[i].randomSeed).Select(c => c.lerpValue).ToArray();
-
-        //     float connectionScalar = 1;
-        //     if (scaleQuery.Length > 0)
-        //     {
-        //         connectionScalar = 0.11f * Mathf.Min(scaleQuery.Length, 3); // 1 .5. 33
-        //         float lerpAgg = 0;
-        //         foreach (float lerpValue in scaleQuery)
-        //         {
-        //             lerpAgg += lerpValue;
-        //         }
-        //         lerpAgg /= scaleQuery.Length;
-        //         connectionScalar *= lerpAgg;
-        //         connectionScalar = 1 - connectionScalar;
-        //     }
-
-        //     // does this also need to affect our connection scale??
-        //     // or threre is something wrong with my math
-        //     float scale = _activeParticles[i].GetCurrentSize(particleSystemToRender) / transform.localScale.x; // divide by 2 to convert to a radius
-        //     scale *= connectionScalar;
-        //     _particleTransform[i] = new Vector4(position.x, position.y, position.z, scale);
-        // }
-    }
-
 
     private void SetNodeIndexes()
     {
@@ -267,24 +255,25 @@ public class RaymarchParticleBuffer : MonoBehaviour
         }
     }
 
-    private void SetConnectionData()
+    // we still need to assign the positions of our target connection as the node may not exist while we still need to access the location
+    private void SetShaderArrays()
     {
-        int runningIndex = 0;
+        ClearArrays();
+
         for (int i = 0; i < _particleNodes.Count; i++)
         {
             _particleTransform[i] = _particleNodes[i].ParticleNodeTransformData();
-
-            for (int j = 0; j < _particleNodes[i].connectionsCount; j++)
-            {
-                int targetIndex = _particleNodes[i].connections[j].GetNode.index;
-                _particleConnectionPos1[runningIndex] = _particleNodes[i].particlePosition;
-                _particleConnectionPos2[runningIndex] = _particleNodes[targetIndex].particlePosition;
-                _particleConnectionMatrices[runningIndex] = _particleNodes[i].connections[j].Rot;
-                _particleConnectionScale[runningIndex] = _particleNodes[i].connections[j].Scale;
-                runningIndex++;
-            }
-
         }
+
+        var connectionQuery = _particleNodes.SelectMany(n => n.connections).ToArray();
+        for (int j = 0; j < _particleConnectionsCount; j++)
+        {
+            _particleConnectionPos01[j] = connectionQuery[j].StartPos;
+            _particleConnectionPos02[j] = connectionQuery[j].EndPos;
+            _particleConnectionMatrices[j] = connectionQuery[j].Rot;
+            _particleConnectionScale[j] = connectionQuery[j].Scale;
+        }
+
     }
 
     public void EditorUpdate(float time)

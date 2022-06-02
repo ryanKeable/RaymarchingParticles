@@ -20,8 +20,9 @@ public class ParticleNode
     public bool isDecaying; // stops us looking for new connections when dead, or being found
 
     public List<uint> connectionIDs = new List<uint>();
-    public int connectionsCount { get => myConnections.Count; }
     public List<ConnectionData> connections { get => myConnections; }
+    public int myConnectionsCount { get => myConnections.Count; }
+    public int totalConnectionsCount { get => connectionIDs.Count; }
     // 
     private List<ParticleNode> closeNodes = new List<ParticleNode>();
     private List<ConnectionData> myConnections = new List<ConnectionData>();
@@ -33,10 +34,19 @@ public class ParticleNode
     private float minScale;
     private float smoothness;
 
-    const float decayPercent = 0.25f;
+    float decayPercent = 0.25f;//{ get => connectionScalar * 0.25f; }
 
-    public int DEBUG_connectionsCount;
+    public float connectionScalar;
+    public int MyConnectionsCount;
 
+    public Vector4 ConnectionShaderData()
+    {
+        if (myConnectionsCount == 0) return Vector4.zero;
+        int x = connections[0].GetNode.index;
+        int y = myConnectionsCount > 1 ? connections[1].GetNode.index : 0;
+        int z = myConnectionsCount > 2 ? connections[2].GetNode.index : 0;
+        return new Vector4(myConnectionsCount, x, y, z); // this will fail big time
+    }
 
     [Serializable]
     public class ConnectionData
@@ -45,7 +55,8 @@ public class ParticleNode
 
         private ParticleNode _node;
         private Matrix4x4 _rotation;
-        private Vector3 _targetPos;
+        private Vector3 _startPos;
+        private Vector3 _endPos;
         private Vector4 _scale;
         private float _growth;
         private float _lerpValue;
@@ -60,19 +71,15 @@ public class ParticleNode
 
         public ParticleNode GetNode { get => _node; }
         public Matrix4x4 Rot { get => _rotation; set => _rotation = value; }
-        public Vector3 TargetPos { get => _targetPos; set => _targetPos = value; }
+        public Vector3 StartPos { get => _startPos; set => _startPos = value; }
+        public Vector3 EndPos { get => _endPos; set => _endPos = value; }
         public Vector4 Scale { get => _scale; set => _scale = value; }
         public float Growth { get => _growth; set => _growth = value; }
         public float LerpValue { get => _lerpValue; set => _lerpValue = value; }
+
+
     }
 
-
-    // if I want to use cylinders where the origin is at the sphere i need to:
-    /*
-        -- find connections before determining scale
-        -- CRUCIALLY!! IF the particle this node tracks DIES but its REF connections still EXIST, this can no longer manage it?!
-        -- we have to transfer owner ship to the other particle nodes
-    */
     public ParticleNode(ParticleSystem.Particle _particle, float _stretchScale, float _distThreshold, float _minScale, float _smoothness)
     {
         id = _particle.randomSeed;
@@ -90,6 +97,7 @@ public class ParticleNode
     {
         myConnections.Add(new ConnectionData(node));
         connectionIDs.Add(node.id);
+        MyConnectionsCount++;
     }
 
     public void AddRefConnection(ParticleNode node)
@@ -98,20 +106,18 @@ public class ParticleNode
         connectionIDs.Add(node.id);
     }
 
-    // we need to remove any referenced connections when 
-    // A) a particle dies and the connection has retracted
-    // B) a connection distance gets too great
+    public void RemoveRefConnection(ParticleNode node)
+    {
+        refConnections.Remove(node);
+        connectionIDs.Remove(node.id);
+    }
+
     private void RemoveMyConnection(ConnectionData connection)
     {
         myConnections.Remove(connection);
         connection.GetNode.RemoveRefConnection(this);
         connectionIDs.Remove(connection.nodeID);
-    }
-
-    public void RemoveRefConnection(ParticleNode node)
-    {
-        refConnections.Remove(node);
-        connectionIDs.Remove(node.id);
+        MyConnectionsCount--;
     }
 
     public void SetParticleData(ParticleSystem.Particle[] _activeParticles)
@@ -126,13 +132,13 @@ public class ParticleNode
         particlePosition = ParticlePosition(theParticle);
         particleScale = ParticleScales(theParticle);
         particleRemainingLife = ParticleRemainingLifetime(theParticle);
-        isMature = IsMature(theParticle);
-        isDecaying = IsDecaying(theParticle);
+        isMature = IsMature();
+        isDecaying = IsDecaying();
     }
 
     public void FindCloseConnections(ParticleNode[] _activeNodes)
     {
-        if (!isMature || connectionsCount >= Utils.MaxConnections) return;
+        if (!isMature || myConnectionsCount >= Utils.MaxConnections) return;
 
         closeNodes = Utils.FindCloseParticleNodes(_activeNodes, this, distThreshold);
         if (closeNodes.Count == 0) return;
@@ -151,18 +157,34 @@ public class ParticleNode
             return;
         }
 
-        AdjustNodeScale();
-        UpdateParticleConnections(_growthValue);
+        AdjustScalePerConnection(_growthValue);
+    }
+
+    public void UpdateNodeConnections(float _growthValue, out ParticleNode nodeToRemove)
+    {
+        nodeToRemove = null;
+        List<ConnectionData> connectionsToRemove = new List<ConnectionData>();
+
+        for (int i = 0; i < myConnections.Count; i++)
+        {
+            UpdateParticleNodeConnection(myConnections[i], _growthValue, out ConnectionData connectionToRemove);
+
+            if (connectionToRemove != null) connectionsToRemove.Add(connectionToRemove);
+        }
+
+        foreach (ConnectionData c in connectionsToRemove)
+        {
+            RemoveMyConnection(c);
+        }
 
         if (CheckForFinishedNodeAfterUpdate()) nodeToRemove = this;
 
-        DEBUG_connectionsCount = connectionsCount;
     }
 
     public Vector4 ParticleNodeTransformData()
     {
         Vector3 position = particlePosition;
-        float scale = particleScale;
+        float scale = particleScale * Mathf.Pow(connectionScalar, totalConnectionsCount); // do this afterwards??
 
         return new Vector4(position.x, position.y, position.z, scale);
     }
@@ -192,15 +214,13 @@ public class ParticleNode
         return p.remainingLifetime;
     }
 
-    private bool IsMature(ParticleSystem.Particle? _particle)
+    private bool IsMature()
     {
-        if (_particle == null) return false;
         return ScalePercent() > decayPercent;
     }
 
-    private bool IsDecaying(ParticleSystem.Particle? _particle)
+    private bool IsDecaying()
     {
-        if (_particle == null) return false;
         return ScalePercent() < 1 - decayPercent && particleRemainingLife < 0.5f;
     }
 
@@ -224,46 +244,35 @@ public class ParticleNode
         }
     }
 
-    private void AdjustNodeScale()
+    void AdjustScalePerConnection(float lerpValue)
     {
-        if (connectionsCount == 0) return;
-        float scalar = 0.11f * Mathf.Min(connectionsCount, 3); // .11 .22 .33
-        float lerpAgg = 0;
-
-        foreach (float lerpValue in myConnections.Select(c => c.LerpValue))
+        // we are trying to account for the growrth that occurs when we union two SDFs in the chader
+        if (totalConnectionsCount == 0)
         {
-            lerpAgg += lerpValue;
+            connectionScalar = 1f;
+            return;
         }
-        lerpAgg /= connectionsCount;
-        scalar *= lerpAgg;
-        scalar = 1 - scalar;
 
-        particleScale *= scalar;
+        float targetScalar = 1 - smoothness * totalConnectionsCount;
+        // float elapsedTime = 1.0f;
+        // if (connectionScalar != targetScalar)
+        // {
+        //     elapsedTime = 0.0f;
+        //     elapsedTime += lerpValue;
+        // }
+
+        // float scaleTarget = Mathf.Lerp(connectionScalar, targetScalar, elapsedTime);
+        connectionScalar = targetScalar;
     }
 
-    private void UpdateParticleConnections(float _growthValue)
-    {
-        List<ConnectionData> connectionsToRemove = new List<ConnectionData>();
-
-        for (int i = 0; i < myConnections.Count; i++)
-        {
-            UpdateParticleNodeConnection(myConnections[i], _growthValue, out ConnectionData connectionToRemove);
-
-            if (connectionToRemove != null) connectionsToRemove.Add(connectionToRemove);
-        }
-
-        foreach (ConnectionData c in connectionsToRemove)
-        {
-            RemoveMyConnection(c);
-        }
-    }
 
     // clean this up
     private void UpdateParticleNodeConnection(ConnectionData connection, float _growthValue, out ConnectionData connectionToRemove)
     {
         Vector3 refPos = connection.GetNode.particlePosition;
-        connection.TargetPos = refPos;
+        connection.EndPos = refPos;
         float refScale = connection.GetNode.particleScale;
+        float refConnectionScalar = connection.GetNode.connectionScalar;
         float refLife = connection.GetNode.particleRemainingLife;
 
         bool decayConnection = isDecaying || connection.GetNode.isDecaying;
@@ -274,11 +283,10 @@ public class ParticleNode
 
         // offset based off smoothness and scale
         // lets fix this so that the scale of our caps neatly matches the surface area of the particle where we intersect it
-        // particleTransforms[0] -= dir * (particleScales[0] * 0.66f); 
-        // particleTransforms[1] += dir * (particleScales[1] * 0.66f);
+        connection.StartPos = particlePosition; // - dir * particleScale * connectionScalar * 0.66f;
+        connection.EndPos = refPos; // + dir * refScale * refConnectionScalar * 0.66f;
 
         float dist = Vector3.Distance(particlePosition, refPos);
-
 
         bool breakConnection = dist > distThreshold; // only do this if we are not already decaying
 
@@ -290,7 +298,7 @@ public class ParticleNode
         // if (decayConnection) lerpValue *= ScalePercent(); // shrink based on particle's current state of decay
         connection.LerpValue = lerpValue;
         float length = LerpLength(dist, lerpValue) / 2;
-        Vector3 capScales = LerpConnectionScale(refScale, lerpValue);
+        Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
 
 
         connection.Scale = new Vector4(Mathf.Max(length, 0), capScales.x, capScales.y, capScales.z); // getting negative values for scale?!
@@ -319,15 +327,21 @@ public class ParticleNode
         return length;
     }
 
-    private Vector3 LerpConnectionScale(float refScale, float lerpValue)
+    private Vector3 LerpConnectionScale(float refScale, float refConnectionScalar, float lerpValue)
     {
-        float percentageOfParticle = 0.5f; // TODO: work out a better percentage for this based off union smoothness?? (smoothness * 2)??  -- we only want this to effect the final cap scales, not the mid
+        float percentageOfParticle = .66f;//ScalePercent(); // TODO: work out a better percentage for this based off union smoothness?? (smoothness * 2)??  -- we only want this to effect the final cap scales, not the mid
         float targetR1 = Mathf.SmoothStep(0, particleScale * percentageOfParticle, lerpValue);
         float targetR2 = Mathf.SmoothStep(0, refScale * percentageOfParticle, lerpValue);
 
+        targetR1 *= connectionScalar;
+        targetR2 *= refConnectionScalar;
 
         float fullLengthStretch = lerpValue * (1 - stretchScale); // this can be 0 -- we dont want that we want 1->0.5
-        float midR = Mathf.Min(targetR1, targetR2) * 0.66f * (lerpValue - fullLengthStretch);
+        float midR = Mathf.Min(targetR1, targetR2) * 0.8f * (lerpValue - fullLengthStretch);
+
+        // targetR1 = Mathf.Max(targetR1, minScale * startScale);
+        // targetR2 = Mathf.Max(targetR2, minScale * startScale);
+        // midR = Mathf.Max(midR, minScale * startScale);
 
         return new Vector3(targetR1, targetR2, midR);
     }
