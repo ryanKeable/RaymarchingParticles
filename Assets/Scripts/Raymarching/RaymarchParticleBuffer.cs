@@ -33,10 +33,9 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private ParticleSystem.Particle[] _activeParticles;
 
     private Vector4[] _particleTransform;
-    private Vector4[] _particleConnectionPos01 = new Vector4[32];
 
-    private Vector4[] _particleConnectionPos02 = new Vector4[32];
-    [SerializeField]
+    private Vector4[] _particleConnections = new Vector4[32];
+    private float[] _particleConnectionLengths = new float[32];
     private Vector4[] _particleConnectionScale = new Vector4[32];
     private Matrix4x4[] _particleConnectionMatrices = new Matrix4x4[32];
 
@@ -52,7 +51,6 @@ public class RaymarchParticleBuffer : MonoBehaviour
     {
         Clear();
     }
-
 
     private void LateUpdate()
     {
@@ -80,11 +78,11 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     void ClearArrays()
     {
-        _particleConnectionScale = new Vector4[32];
-        _particleConnectionMatrices = new Matrix4x4[32];
-        _particleConnectionPos01 = new Vector4[32];
-        _particleConnectionPos02 = new Vector4[32];
         _particleTransform = new Vector4[MaxParticles];
+        _particleConnections = new Vector4[MaxParticles * 2];
+        _particleConnectionLengths = new float[MaxParticles * 2];
+        _particleConnectionScale = new Vector4[MaxParticles * 2];
+        _particleConnectionMatrices = new Matrix4x4[MaxParticles * 2];
     }
 
     // this only renders correctly after a re-compile?
@@ -121,17 +119,19 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void SetParticleMaterialProps()
     {
-        renderMat.SetVectorArray("_Particle", _particleTransform);
+        renderMat.SetVectorArray("_Particles", _particleTransform);
         renderMat.SetInt("_ParticleCount", _particleNodesCount);
     }
 
     private void SetConnectionMaterialProps()
     {
-        renderMat.SetVectorArray("_ConnectionPos01", _particleConnectionPos01);
-        renderMat.SetVectorArray("_ConnectionPos02", _particleConnectionPos02);
-        renderMat.SetMatrixArray("_ConnectionRotationMatrix", _particleConnectionMatrices.ToArray());
-        renderMat.SetVectorArray("_ConnectionScale", _particleConnectionScale);
-        renderMat.SetFloat("_UnionSmoothness", unionSmoothness);
+
+        renderMat.SetVectorArray("_ParticleConnections", _particleConnections);
+
+        renderMat.SetFloatArray("_ConnectionLengths", _particleConnectionLengths);
+        renderMat.SetVectorArray("_ConnectionScales", _particleConnectionScale);
+        renderMat.SetMatrixArray("_ConnectionRotationMatrices", _particleConnectionMatrices.ToArray());
+        renderMat.SetFloat("_UnionSmoothness", Mathf.Max(unionSmoothness, 0.001f));
         renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
         renderMat.SetInt("_ConnectionCount", _particleConnectionsCount);
     }
@@ -259,20 +259,31 @@ public class RaymarchParticleBuffer : MonoBehaviour
     private void SetShaderArrays()
     {
         ClearArrays();
-
+        int runningIndex = 0;
         for (int i = 0; i < _particleNodes.Count; i++)
         {
             _particleTransform[i] = _particleNodes[i].ParticleNodeTransformData();
+            _particleConnections[i] = _particleNodes[i].ConnectionShaderData();
+
+            for (int j = 0; j < _particleNodes[i].MyConnectionsCount; j++)
+            {
+                _particleConnectionLengths[runningIndex] = _particleNodes[i].connections[j].Length;
+                _particleConnectionScale[runningIndex] = _particleNodes[i].connections[j].Scale;
+                _particleConnectionMatrices[runningIndex] = _particleNodes[i].connections[j].Rot;
+                runningIndex++;
+            }
+
         }
 
-        var connectionQuery = _particleNodes.SelectMany(n => n.connections).ToArray();
-        for (int j = 0; j < _particleConnectionsCount; j++)
-        {
-            _particleConnectionPos01[j] = connectionQuery[j].StartPos;
-            _particleConnectionPos02[j] = connectionQuery[j].EndPos;
-            _particleConnectionMatrices[j] = connectionQuery[j].Rot;
-            _particleConnectionScale[j] = connectionQuery[j].Scale;
-        }
+
+        // var connectionQuery = _particleNodes.SelectMany(n => n.connections).ToArray();
+        // for (int j = 0; j < _particleConnectionsCount; j++)
+        // {
+        //     _particleConnectionPos01[j] = connectionQuery[j].StartPos;
+        //     _particleConnectionPos02[j] = connectionQuery[j].EndPos;
+        //     _particleConnectionMatrices[j] = connectionQuery[j].Rot;
+        //     _particleConnectionScale[j] = connectionQuery[j].Scale;
+        // }
 
     }
 
@@ -281,3 +292,8 @@ public class RaymarchParticleBuffer : MonoBehaviour
         SetRaymarchParticleBuffer(time);
     }
 }
+
+// particles cannot control both ends of the connections AS we need to adjust the smoothness on each end
+// connection data should only focus on the half connected to the node
+// we need to look at all the connections for each particle
+// find a way to keep the matrix array the same length (re-use the index) -- maybe a pointer at some point??

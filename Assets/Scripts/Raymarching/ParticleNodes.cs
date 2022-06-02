@@ -25,6 +25,8 @@ public class ParticleNode
     public int totalConnectionsCount { get => connectionIDs.Count; }
     // 
     private List<ParticleNode> closeNodes = new List<ParticleNode>();
+
+    [SerializeField]
     private List<ConnectionData> myConnections = new List<ConnectionData>();
     private List<ParticleNode> refConnections = new List<ParticleNode>();
 
@@ -58,6 +60,7 @@ public class ParticleNode
         private Vector3 _startPos;
         private Vector3 _endPos;
         private Vector4 _scale;
+        private float _length;
         private float _growth;
         private float _lerpValue;
 
@@ -74,6 +77,7 @@ public class ParticleNode
         public Vector3 StartPos { get => _startPos; set => _startPos = value; }
         public Vector3 EndPos { get => _endPos; set => _endPos = value; }
         public Vector4 Scale { get => _scale; set => _scale = value; }
+        public float Length { get => _length; set => _length = value; }
         public float Growth { get => _growth; set => _growth = value; }
         public float LerpValue { get => _lerpValue; set => _lerpValue = value; }
 
@@ -224,7 +228,7 @@ public class ParticleNode
         return ScalePercent() < 1 - decayPercent && particleRemainingLife < 0.5f;
     }
 
-    private float ScalePercent()
+    public float ScalePercent()
     {
         return particleScale / startScale;
     }
@@ -272,6 +276,7 @@ public class ParticleNode
         Vector3 refPos = connection.GetNode.particlePosition;
         connection.EndPos = refPos;
         float refScale = connection.GetNode.particleScale;
+        float refScalePercent = connection.GetNode.ScalePercent();
         float refConnectionScalar = connection.GetNode.connectionScalar;
         float refLife = connection.GetNode.particleRemainingLife;
 
@@ -281,14 +286,10 @@ public class ParticleNode
         Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
         connection.Rot = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
 
-        // offset based off smoothness and scale
-        // lets fix this so that the scale of our caps neatly matches the surface area of the particle where we intersect it
-        connection.StartPos = particlePosition; // - dir * particleScale * connectionScalar * 0.66f;
-        connection.EndPos = refPos; // + dir * refScale * refConnectionScalar * 0.66f;
 
         float dist = Vector3.Distance(particlePosition, refPos);
 
-        bool breakConnection = dist > distThreshold; // only do this if we are not already decaying
+        bool breakConnection = dist > distThreshold;
 
         float targetDist = Mathf.Min(dist, distThreshold);
         targetDist /= 2; // half the distance so our length is correct
@@ -300,8 +301,8 @@ public class ParticleNode
         float length = LerpLength(dist, lerpValue) / 2;
         Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
 
-
-        connection.Scale = new Vector4(Mathf.Max(length, 0), capScales.x, capScales.y, capScales.z); // getting negative values for scale?!
+        connection.Length = Mathf.Max(length, 0);
+        connection.Scale = new Vector4(capScales.x, smoothness * ScalePercent(), capScales.y, smoothness * refScalePercent);  // lerpValue instead of capScales.z
 
         if (flipGrowth && lerpValue < 0.001f) connectionToRemove = connection; // our connection has been completely severed
         else connectionToRemove = null;
