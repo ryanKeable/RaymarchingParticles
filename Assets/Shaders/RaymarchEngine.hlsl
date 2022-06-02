@@ -21,15 +21,15 @@ uniform float _UnionSmoothness;
 // we can either create the vector from the rot matrix, or create the rot matrix from the quaternion and the vector from the quaternion?
 float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectionP2, half4x4 rotMat, float4 scales)
 {
-    float temp = scale.x * (1 - _UnionSmoothness * scale.w) / scale.x * 2; //can factor upto 0.8
-    float h = scale.x;
-    float r1 = scale.y;
-    float r2 = scale.z;
+    // float temp = scales.x * (1 - _UnionSmoothness * scales.w) / scales.x * 2; //can factor upto 0.8
+    float h = scales.x;
+    float r1 = scales.y;
+    float r2 = scales.z;
     float midR = min(r1, r2) * 0.5f; // scale.w
 
     float connection = CappedCone(p - connectionP1, -transpose(rotMat), h, r1, midR, float3(0, h, 0));
     float flippedConnection = CappedCone(p - connectionP2, transpose(rotMat), h, r2, midR, float3(0, h, 0));
-    return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * scale.w);
+    return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * scales.w);
 }
 
 float CalcBridges(float3 p, float4 particle, float3 connectionIds, inout int runningIndex)
