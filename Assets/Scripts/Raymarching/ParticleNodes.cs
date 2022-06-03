@@ -5,7 +5,11 @@ using System;
 using System.Linq;
 // using Editor.c
 
-
+//TODO: connections scalar is set to 1 for now
+//TODO: myabe have a seperate list of connections again, one PER connection part to draw seperately 
+// TODO: essenetially we need a system where each SDF controls its own union smoothness
+//TODO: for spheres this is their scale percent
+//TODO: for cylinders this is their lerpValue
 [Serializable]
 public class ParticleNode
 {
@@ -44,7 +48,7 @@ public class ParticleNode
 
     public Vector4 ParticleData()
     {
-        return new Vector4(totalConnectionsCount, ScalePercent(), 0, 0); // this will fail big time
+        return new Vector4(totalConnectionsCount, ScalePercent() * connectionScalar, 0, 0); // this will fail big time
     }
 
     [Serializable]
@@ -99,6 +103,12 @@ public class ParticleNode
         connectionIDs = new List<uint>();
     }
 
+    // we add a connection for ourselves
+    // we add a connection for our target
+    // the connections point to the node they are connecting to
+    // each connection needs to know about their target connection for establishing rotMatrix Ids
+    // the target connection is barely used...
+    // this all feels convoluted
     public void AddConnections(ParticleNode targetNode)
     {
         ConnectionData newConnection = new ConnectionData(targetNode);
@@ -106,13 +116,13 @@ public class ParticleNode
         targetNode.AddRefConnection(targetConnection);
         newConnection.TargetConnection = targetConnection;
         myConnections.Add(newConnection);
-        connectionIDs.Add(id);
+        connectionIDs.Add(targetNode.id);
     }
 
     public void AddRefConnection(ConnectionData connection)
     {
         refConnections.Add(connection);
-        connectionIDs.Add(id);
+        connectionIDs.Add(connection.nodeID);
     }
 
     public void RemoveRefConnection(ConnectionData connection)
@@ -262,55 +272,16 @@ public class ParticleNode
         }
 
         float targetScalar = 1 - smoothness * totalConnectionsCount;
-        // float elapsedTime = 1.0f;
-        // if (connectionScalar != targetScalar)
-        // {
-        //     elapsedTime = 0.0f;
-        //     elapsedTime += lerpValue;
-        // }
+        float elapsedTime = 1.0f;
+        if (connectionScalar != targetScalar)
+        {
+            elapsedTime = 0.0f;
+            elapsedTime += lerpValue;
+        }
 
-        // float scaleTarget = Mathf.Lerp(connectionScalar, targetScalar, elapsedTime);
-        connectionScalar = targetScalar;
-    }
-
-
-    // clean this up
-    private void UpdateParticleNodeConnection(ConnectionData connection, ref List<Matrix4x4> rotations, float _growthValue, out ConnectionData connectionToRemove)
-    {
-        Vector3 refPos = connection.GetTargetNode.particlePosition;
-        connection.EndPos = refPos;
-        float refScale = connection.GetTargetNode.particleScale;
-        float refScalePercent = connection.GetTargetNode.ScalePercent();
-        float refConnectionScalar = connection.GetTargetNode.connectionScalar;
-        float refLife = connection.GetTargetNode.particleRemainingLife;
-
-        bool decayConnection = isDecaying || connection.GetTargetNode.isDecaying;
-
-        Vector3 dir = Vector3.Normalize(particlePosition - refPos);
-        Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
-        rotations.Add(Matrix4x4.TRS(Vector3.zero, q, Vector3.one));
-
-
-        float dist = Vector3.Distance(particlePosition, refPos);
-
-        bool breakConnection = dist > distThreshold;
-
-        float targetDist = Mathf.Min(dist, distThreshold);
-        targetDist /= 2; // half the distance so our length is correct
-
-        bool flipGrowth = decayConnection || breakConnection;
-        float lerpValue = LerpValue(connection, _growthValue, targetDist, flipGrowth);
-        // if (decayConnection) lerpValue *= ScalePercent(); // shrink based on particle's current state of decay
-        connection.LerpValue = lerpValue;
-        float length = LerpLength(dist, lerpValue) / 2;
-        Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
-
-        connection.Length = Mathf.Max(length, 0);
-        connection.Data = new Vector4(capScales.x, smoothness * ScalePercent(), capScales.y, smoothness * refScalePercent);  // lerpValue instead of capScales.z
-
-        if (flipGrowth && lerpValue < 0.001f) connectionToRemove = connection; // our connection has been completely severed
-        else connectionToRemove = null;
-
+        float scaleTarget = Mathf.Lerp(connectionScalar, targetScalar, elapsedTime);
+        connectionScalar = scaleTarget;
+        connectionScalar = 1f;
     }
 
     void TrackNodeConnections(ConnectionData connection, float _growthValue, ref List<Matrix4x4> rotations, out ConnectionData connectionToRemove)
@@ -350,12 +321,14 @@ public class ParticleNode
         float length = LerpLength(dist, lerpValue) / 2;
         Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
         rotations.Add(rot);
-        MDebug.LogYellow($"{id} myConnections {myConnections.Count}");
-        MDebug.LogLtBlue($"{id} rotations.Count {refConnections.Count}");
-
         int rotMatrixIndex = rotations.Count;
-        connection.Data = new Vector4(length, capScales.x, capScales.z, rotMatrixIndex);  // lerpValue instead of capScales.z
-        connection.TargetConnection.Data = new Vector4(length, capScales.y, capScales.z, -rotMatrixIndex);  // lerpValue instead of capScales.z
+        connection.Data = new Vector4(length, capScales.x, capScales.z, -rotMatrixIndex);  // lerpValue instead of capScales.z
+        connection.TargetConnection.Data = new Vector4(length, capScales.y, capScales.z, rotMatrixIndex);  // lerpValue instead of capScales.z
+
+        int rotIndex = Mathf.Abs(rotMatrixIndex);
+        int flip = rotMatrixIndex / rotIndex;
+
+        MDebug.LogBlue($"rotIndex {rotIndex} flip {flip}");
     }
 
     void CalcAnglesAndDistance(Vector3 p1, Vector3 p2, out Matrix4x4 m, out float d)
@@ -391,8 +364,8 @@ public class ParticleNode
         float targetR1 = Mathf.SmoothStep(0, particleScale * percentageOfParticle, lerpValue);
         float targetR2 = Mathf.SmoothStep(0, refScale * percentageOfParticle, lerpValue);
 
-        targetR1 *= connectionScalar;
-        targetR2 *= refConnectionScalar;
+        targetR1 *= connectionScalar * connectionScalar;
+        targetR2 *= refConnectionScalar * refConnectionScalar;
 
         float fullLengthStretch = lerpValue * (1 - stretchScale); // this can be 0 -- we dont want that we want 1->0.5
         float midR = Mathf.Min(targetR1, targetR2) * 0.66f * (lerpValue - fullLengthStretch);

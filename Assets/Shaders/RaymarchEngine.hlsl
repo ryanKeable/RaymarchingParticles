@@ -46,12 +46,12 @@ float CalcBridges(float3 p, float4 particle, float3 particleData, inout int runn
         int index = _ConnectionData[runningIndex].w;
         int rotIndex = abs(index);
         int flip = index / rotIndex;
-    
-        half4x4 rotMatrix = _ConnectionRotationMatrices[rotIndex];
+        
+        half4x4 rotMatrix = _ConnectionRotationMatrices[rotIndex - 1];
         // rotMatrix = _4x4Identity;
         float smoothness = particleData.y;
 
-        float connection = CappedCone(p - pos, -transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
+        float connection = CappedCone(p - pos, flip * transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
         // float connection = CalcBridgeBetweenParticles(p, startPos, endPos, rotMatrix, float3(h,r1,r2), smoothness);
 
         if (connections == 0)
