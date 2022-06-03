@@ -124,14 +124,11 @@ public class RaymarchParticleBuffer : MonoBehaviour
     {
         renderMat.SetVectorArray("_Particles", _particleTransform);
         renderMat.SetInt("_ParticleCount", _particleNodesCount);
+        renderMat.SetVectorArray("_ParticleData", _particleConnections);
     }
 
     private void SetConnectionMaterialProps()
     {
-
-        renderMat.SetVectorArray("_ParticleConnections", _particleConnections);
-
-        renderMat.SetFloatArray("_ConnectionLengths", _particleConnectionLengths);
         renderMat.SetVectorArray("_ConnectionData", _particleConnectionData);
         renderMat.SetMatrixArray("_ConnectionRotationMatrices", _particleConnectionMatrices.ToArray());
         renderMat.SetFloat("_UnionSmoothness", Mathf.Max(unionSmoothness, 0.001f));
@@ -266,12 +263,12 @@ public class RaymarchParticleBuffer : MonoBehaviour
         for (int i = 0; i < _particleNodes.Count; i++)
         {
             _particleTransform[i] = _particleNodes[i].ParticleNodeTransformData();
-            _particleConnections[i] = _particleNodes[i].ConnectionShaderData();
+            _particleConnections[i] = _particleNodes[i].ParticleData();
 
             // get the scale and rotmatrix Index of every connection
             for (int j = 0; j < _particleNodes[i].totalConnectionsCount; j++)
             {
-                if (_particleNodes[i].AllConnections[j] == null) continue;
+                if (_particleNodes[i].AllConnections.Length == 0) continue;
                 _particleConnectionData[runningIndex] = _particleNodes[i].AllConnections[j].Data;
                 runningIndex++;
             }

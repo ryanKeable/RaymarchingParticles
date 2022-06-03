@@ -42,13 +42,9 @@ public class ParticleNode
 
     public float connectionScalar;
 
-    public Vector4 ConnectionShaderData()
+    public Vector4 ParticleData()
     {
-        if (myConnectionsCount == 0) return Vector4.zero;
-        int x = MyConnections[0].GetTargetNode.index;
-        int y = myConnectionsCount > 1 ? MyConnections[1].GetTargetNode.index : 0;
-        int z = myConnectionsCount > 2 ? MyConnections[2].GetTargetNode.index : 0;
-        return new Vector4(myConnectionsCount, x, y, z); // this will fail big time
+        return new Vector4(totalConnectionsCount, ScalePercent(), 0, 0); // this will fail big time
     }
 
     [Serializable]
@@ -358,8 +354,8 @@ public class ParticleNode
         MDebug.LogLtBlue($"{id} rotations.Count {refConnections.Count}");
 
         int rotMatrixIndex = rotations.Count;
-        connection.Data = new Vector4(length, capScales.x, capScales.y, rotMatrixIndex);  // lerpValue instead of capScales.z
-        connection.TargetConnection.Data = new Vector4(length, capScales.x, capScales.y, -rotMatrixIndex);  // lerpValue instead of capScales.z
+        connection.Data = new Vector4(length, capScales.x, capScales.z, rotMatrixIndex);  // lerpValue instead of capScales.z
+        connection.TargetConnection.Data = new Vector4(length, capScales.y, capScales.z, -rotMatrixIndex);  // lerpValue instead of capScales.z
     }
 
     void CalcAnglesAndDistance(Vector3 p1, Vector3 p2, out Matrix4x4 m, out float d)

@@ -1,7 +1,7 @@
 #include "RaymarchFunctions.hlsl"
 
 uniform float4 _Particles[32];
-uniform float4 _ParticleConnections[32];
+uniform float4 _ParticleData[32];
 uniform float _ConnectionLengths[32];
 uniform half4 _ConnectionData[32];
 uniform half4x4 _ConnectionRotationMatrices[32];
@@ -32,24 +32,27 @@ float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectio
     return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * smoothness);
 }
 
-float CalcBridges(float3 p, float4 particle, float3 connectionIds, inout int runningIndex)
+float CalcBridges(float3 p, float4 particle, float3 particleData, inout int runningIndex)
 {
     // for each connection we have...
-    int connectionCount = connectionIds.x; // 2
+    int connectionCount = particleData.x; // 2
     float connections;
     for (int j = 0; j < connectionCount; j++)
     {
-        int particleIndex = connectionIds[j + 1]; // 1, 2
-        float3 startPos = particle.xyz;
-        float3 endPos = _Particles[particleIndex].xyz;
+        float3 pos = particle.xyz;
         float h = _ConnectionData[runningIndex].x;
         float r1 = _ConnectionData[runningIndex].y;
         float r2 = _ConnectionData[runningIndex].z;
-        half4x4 rotMatrix = _ConnectionRotationMatrices[_ConnectionData[runningIndex].w];
+        int index = _ConnectionData[runningIndex].w;
+        int rotIndex = abs(index);
+        int flip = index / rotIndex;
+    
+        half4x4 rotMatrix = _ConnectionRotationMatrices[rotIndex];
         // rotMatrix = _4x4Identity;
-        float smoothness = particle.w;
+        float smoothness = particleData.y;
 
-        float connection = CalcBridgeBetweenParticles(p, startPos, endPos, rotMatrix, float3(h,r1,r2), smoothness);
+        float connection = CappedCone(p - pos, -transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
+        // float connection = CalcBridgeBetweenParticles(p, startPos, endPos, rotMatrix, float3(h,r1,r2), smoothness);
 
         if (connections == 0)
             connections = connection;
@@ -81,9 +84,9 @@ float GetDistance(float3 p)
         else
             scene = opSmoothUnion(scene, sphere, _UnionSmoothness * _Particles[i].w);
         
-        if (_ParticleConnections[i].x == 0) continue; // do not calcc bridges if we have none
+        if (_ParticleData[i].x == 0) continue; // do not calcc bridges if we have none
 
-        float connections = CalcBridges(p, _Particles[i], _ParticleConnections[i], runningIndex); // generates the connections and fuses them together
+        float connections = CalcBridges(p, _Particles[i], _ParticleData[i], runningIndex); // generates the connections and fuses them together
         scene = opSmoothUnion(scene, connections, _UnionSmoothness * _Particles[i].w); // this connects the sphere to the connections
 
     }
