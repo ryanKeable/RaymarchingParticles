@@ -3,7 +3,7 @@
 uniform float4 _Particles[32];
 uniform float4 _ParticleConnections[32];
 uniform float _ConnectionLengths[32];
-uniform half4 _ConnectionScales[32];
+uniform half4 _ConnectionData[32];
 uniform half4x4 _ConnectionRotationMatrices[32];
 
 uniform float3 _ConnectionPos01[32];
@@ -19,7 +19,7 @@ uniform float _UnionSmoothness;
 // we currently have a rot matrix, not a vector
 // we can either use our sphere pos (another 2 vector LUTs -- we cant find the index here without the logic)
 // we can either create the vector from the rot matrix, or create the rot matrix from the quaternion and the vector from the quaternion?
-float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectionP2, half4x4 rotMat, float4 scales)
+float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectionP2, half4x4 rotMat, float3 scales, float smoothness)
 {
     // float temp = scales.x * (1 - _UnionSmoothness * scales.w) / scales.x * 2; //can factor upto 0.8
     float h = scales.x;
@@ -29,7 +29,7 @@ float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectio
 
     float connection = CappedCone(p - connectionP1, -transpose(rotMat), h, r1, midR, float3(0, h, 0));
     float flippedConnection = CappedCone(p - connectionP2, transpose(rotMat), h, r2, midR, float3(0, h, 0));
-    return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * scales.w);
+    return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * smoothness);
 }
 
 float CalcBridges(float3 p, float4 particle, float3 connectionIds, inout int runningIndex)
@@ -42,15 +42,19 @@ float CalcBridges(float3 p, float4 particle, float3 connectionIds, inout int run
         int particleIndex = connectionIds[j + 1]; // 1, 2
         float3 startPos = particle.xyz;
         float3 endPos = _Particles[particleIndex].xyz;
-        float length = _ConnectionLengths[runningIndex];
-        float r1 = _ConnectionScales[runningIndex];
+        float h = _ConnectionData[runningIndex].x;
+        float r1 = _ConnectionData[runningIndex].y;
+        float r2 = _ConnectionData[runningIndex].z;
+        half4x4 rotMatrix = _ConnectionRotationMatrices[_ConnectionData[runningIndex].w];
+        // rotMatrix = _4x4Identity;
+        float smoothness = particle.w;
 
-        float connection = CalcBridgeBetweenParticles(p, startPos, endPos, _ConnectionRotationMatrices[runningIndex], _ConnectionScales[runningIndex]);
+        float connection = CalcBridgeBetweenParticles(p, startPos, endPos, rotMatrix, float3(h,r1,r2), smoothness);
 
         if (connections == 0)
             connections = connection;
         else
-            connections = opSmoothUnion(connections, connection, _UnionSmoothness * _ConnectionScales[runningIndex].w); // this makes the previous union fatter
+            connections = opSmoothUnion(connections, connection, _UnionSmoothness * smoothness); // this makes the previous union fatter
         
         runningIndex++;
     }

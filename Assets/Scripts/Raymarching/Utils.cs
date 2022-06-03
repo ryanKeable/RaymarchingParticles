@@ -75,8 +75,9 @@ public static class Utils
 
     private static void AddNewConnection(ParticleNode _thisNode, ParticleNode _targetNode)
     {
-        _thisNode.AddMyConnection(_targetNode);
-        _targetNode.AddRefConnection(_thisNode);
+        _thisNode.AddConnections(_targetNode);
+        // _thisNode.AddMyConnection(_targetNode);
+        // _targetNode.AddRefConnection(_thisNode);
     }
 
     private static bool CheckActiveAndDistance(ParticleNode _thisNode, ParticleNode _targetNode, float _distThrehold)

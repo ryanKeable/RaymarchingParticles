@@ -20,7 +20,8 @@ public class ParticleNode
     public bool isDecaying; // stops us looking for new connections when dead, or being found
 
     public List<uint> connectionIDs = new List<uint>();
-    public List<ConnectionData> connections { get => myConnections; }
+    public List<ConnectionData> MyConnections { get => myConnections; }
+    public ConnectionData[] AllConnections { get => myConnections.Concat(refConnections).ToArray(); }
     public int myConnectionsCount { get => myConnections.Count; }
     public int totalConnectionsCount { get => connectionIDs.Count; }
     // 
@@ -28,7 +29,8 @@ public class ParticleNode
 
     [SerializeField]
     private List<ConnectionData> myConnections = new List<ConnectionData>();
-    private List<ParticleNode> refConnections = new List<ParticleNode>();
+    [SerializeField]
+    private List<ConnectionData> refConnections = new List<ConnectionData>();
 
     private float startScale;
     private float stretchScale;
@@ -39,14 +41,13 @@ public class ParticleNode
     float decayPercent = 0.25f;//{ get => connectionScalar * 0.25f; }
 
     public float connectionScalar;
-    public int MyConnectionsCount;
 
     public Vector4 ConnectionShaderData()
     {
         if (myConnectionsCount == 0) return Vector4.zero;
-        int x = connections[0].GetNode.index;
-        int y = myConnectionsCount > 1 ? connections[1].GetNode.index : 0;
-        int z = myConnectionsCount > 2 ? connections[2].GetNode.index : 0;
+        int x = MyConnections[0].GetTargetNode.index;
+        int y = myConnectionsCount > 1 ? MyConnections[1].GetTargetNode.index : 0;
+        int z = myConnectionsCount > 2 ? MyConnections[2].GetTargetNode.index : 0;
         return new Vector4(myConnectionsCount, x, y, z); // this will fail big time
     }
 
@@ -55,7 +56,8 @@ public class ParticleNode
     {
         public uint nodeID;
 
-        private ParticleNode _node;
+        private ParticleNode _targetNode;
+        private ConnectionData _targetConnection;
         private Matrix4x4 _rotation;
         private Vector3 _startPos;
         private Vector3 _endPos;
@@ -63,23 +65,27 @@ public class ParticleNode
         private float _length;
         private float _growth;
         private float _lerpValue;
+        private int _rotIndex;
+
 
         public ConnectionData(ParticleNode node)
         {
-            this._node = node;
+            this._targetNode = node;
             this.nodeID = node.id;
             this._lerpValue = 0;
             this._growth = 0;
         }
 
-        public ParticleNode GetNode { get => _node; }
+        public ParticleNode GetTargetNode { get => _targetNode; }
+        public ConnectionData TargetConnection { get => _targetConnection; set => _targetConnection = value; }
         public Matrix4x4 Rot { get => _rotation; set => _rotation = value; }
         public Vector3 StartPos { get => _startPos; set => _startPos = value; }
         public Vector3 EndPos { get => _endPos; set => _endPos = value; }
-        public Vector4 Scale { get => _scale; set => _scale = value; }
+        public Vector4 Data { get => _scale; set => _scale = value; }
         public float Length { get => _length; set => _length = value; }
         public float Growth { get => _growth; set => _growth = value; }
         public float LerpValue { get => _lerpValue; set => _lerpValue = value; }
+        public int RotIndex { get => _rotIndex; set => _rotIndex = value; }
 
 
     }
@@ -93,35 +99,37 @@ public class ParticleNode
         smoothness = _smoothness;
 
         myConnections = new List<ConnectionData>();
-        refConnections = new List<ParticleNode>();
+        refConnections = new List<ConnectionData>();
         connectionIDs = new List<uint>();
     }
 
-    public void AddMyConnection(ParticleNode node)
+    public void AddConnections(ParticleNode targetNode)
     {
-        myConnections.Add(new ConnectionData(node));
-        connectionIDs.Add(node.id);
-        MyConnectionsCount++;
+        ConnectionData newConnection = new ConnectionData(targetNode);
+        ConnectionData targetConnection = new ConnectionData(this);
+        targetNode.AddRefConnection(targetConnection);
+        newConnection.TargetConnection = targetConnection;
+        myConnections.Add(newConnection);
+        connectionIDs.Add(id);
     }
 
-    public void AddRefConnection(ParticleNode node)
+    public void AddRefConnection(ConnectionData connection)
     {
-        refConnections.Add(node);
-        connectionIDs.Add(node.id);
+        refConnections.Add(connection);
+        connectionIDs.Add(id);
     }
 
-    public void RemoveRefConnection(ParticleNode node)
+    public void RemoveRefConnection(ConnectionData connection)
     {
-        refConnections.Remove(node);
-        connectionIDs.Remove(node.id);
+        refConnections.Remove(connection);
+        connectionIDs.Remove(connection.nodeID);
     }
 
     private void RemoveMyConnection(ConnectionData connection)
     {
         myConnections.Remove(connection);
-        connection.GetNode.RemoveRefConnection(this);
+        connection.GetTargetNode.RemoveRefConnection(connection.TargetConnection); //remove which connection?? -- it has to match the connection we added
         connectionIDs.Remove(connection.nodeID);
-        MyConnectionsCount--;
     }
 
     public void SetParticleData(ParticleSystem.Particle[] _activeParticles)
@@ -164,14 +172,14 @@ public class ParticleNode
         AdjustScalePerConnection(_growthValue);
     }
 
-    public void UpdateNodeConnections(float _growthValue, out ParticleNode nodeToRemove)
+    public void UpdateNodeConnections(float _growthValue, ref List<Matrix4x4> rotations, out ParticleNode nodeToRemove)
     {
         nodeToRemove = null;
         List<ConnectionData> connectionsToRemove = new List<ConnectionData>();
 
         for (int i = 0; i < myConnections.Count; i++)
         {
-            UpdateParticleNodeConnection(myConnections[i], _growthValue, out ConnectionData connectionToRemove);
+            TrackNodeConnections(myConnections[i], _growthValue, ref rotations, out ConnectionData connectionToRemove);
 
             if (connectionToRemove != null) connectionsToRemove.Add(connectionToRemove);
         }
@@ -271,20 +279,20 @@ public class ParticleNode
 
 
     // clean this up
-    private void UpdateParticleNodeConnection(ConnectionData connection, float _growthValue, out ConnectionData connectionToRemove)
+    private void UpdateParticleNodeConnection(ConnectionData connection, ref List<Matrix4x4> rotations, float _growthValue, out ConnectionData connectionToRemove)
     {
-        Vector3 refPos = connection.GetNode.particlePosition;
+        Vector3 refPos = connection.GetTargetNode.particlePosition;
         connection.EndPos = refPos;
-        float refScale = connection.GetNode.particleScale;
-        float refScalePercent = connection.GetNode.ScalePercent();
-        float refConnectionScalar = connection.GetNode.connectionScalar;
-        float refLife = connection.GetNode.particleRemainingLife;
+        float refScale = connection.GetTargetNode.particleScale;
+        float refScalePercent = connection.GetTargetNode.ScalePercent();
+        float refConnectionScalar = connection.GetTargetNode.connectionScalar;
+        float refLife = connection.GetTargetNode.particleRemainingLife;
 
-        bool decayConnection = isDecaying || connection.GetNode.isDecaying;
+        bool decayConnection = isDecaying || connection.GetTargetNode.isDecaying;
 
         Vector3 dir = Vector3.Normalize(particlePosition - refPos);
         Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
-        connection.Rot = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
+        rotations.Add(Matrix4x4.TRS(Vector3.zero, q, Vector3.one));
 
 
         float dist = Vector3.Distance(particlePosition, refPos);
@@ -302,11 +310,64 @@ public class ParticleNode
         Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
 
         connection.Length = Mathf.Max(length, 0);
-        connection.Scale = new Vector4(capScales.x, smoothness * ScalePercent(), capScales.y, smoothness * refScalePercent);  // lerpValue instead of capScales.z
+        connection.Data = new Vector4(capScales.x, smoothness * ScalePercent(), capScales.y, smoothness * refScalePercent);  // lerpValue instead of capScales.z
 
         if (flipGrowth && lerpValue < 0.001f) connectionToRemove = connection; // our connection has been completely severed
         else connectionToRemove = null;
 
+    }
+
+    void TrackNodeConnections(ConnectionData connection, float _growthValue, ref List<Matrix4x4> rotations, out ConnectionData connectionToRemove)
+    {
+        connectionToRemove = null;
+
+        Vector3 refPos = connection.GetTargetNode.particlePosition;
+        connection.EndPos = refPos;
+        float refScale = connection.GetTargetNode.particleScale;
+        float refScalePercent = connection.GetTargetNode.ScalePercent();
+        float refConnectionScalar = connection.GetTargetNode.connectionScalar;
+        float refLife = connection.GetTargetNode.particleRemainingLife;
+
+
+        CalcAnglesAndDistance(particlePosition, refPos, out Matrix4x4 rot, out float dist);
+
+        bool breakConnection = dist > distThreshold;
+        bool decayConnection = isDecaying || connection.GetTargetNode.isDecaying;
+
+        float targetDist = Mathf.Min(dist, distThreshold);
+        targetDist /= 2; // half the distance so our length is correct
+
+        bool flipGrowth = decayConnection || breakConnection;
+        float lerpValue = LerpValue(connection, _growthValue, targetDist, flipGrowth);
+
+        connection.LerpValue = lerpValue;
+
+
+        if (flipGrowth && lerpValue < 0.001f)
+        {
+            connectionToRemove = connection; // our connection has been completely severed
+            return;
+        }
+
+        // finish setting data
+        // only do this if we are not eing removed
+        float length = LerpLength(dist, lerpValue) / 2;
+        Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
+        rotations.Add(rot);
+        MDebug.LogYellow($"{id} myConnections {myConnections.Count}");
+        MDebug.LogLtBlue($"{id} rotations.Count {refConnections.Count}");
+
+        int rotMatrixIndex = rotations.Count;
+        connection.Data = new Vector4(length, capScales.x, capScales.y, rotMatrixIndex);  // lerpValue instead of capScales.z
+        connection.TargetConnection.Data = new Vector4(length, capScales.x, capScales.y, -rotMatrixIndex);  // lerpValue instead of capScales.z
+    }
+
+    void CalcAnglesAndDistance(Vector3 p1, Vector3 p2, out Matrix4x4 m, out float d)
+    {
+        Vector3 dir = Vector3.Normalize(p1 - p2);
+        Quaternion q = Quaternion.FromToRotation(Vector3.up, dir);
+        m = Matrix4x4.TRS(Vector3.zero, q, Vector3.one);
+        d = Vector3.Distance(p1, p2);
     }
 
     private float LerpValue(ConnectionData connection, float _growthValue, float _dist, bool flip)
@@ -338,7 +399,7 @@ public class ParticleNode
         targetR2 *= refConnectionScalar;
 
         float fullLengthStretch = lerpValue * (1 - stretchScale); // this can be 0 -- we dont want that we want 1->0.5
-        float midR = Mathf.Min(targetR1, targetR2) * 0.8f * (lerpValue - fullLengthStretch);
+        float midR = Mathf.Min(targetR1, targetR2) * 0.66f * (lerpValue - fullLengthStretch);
 
         // targetR1 = Mathf.Max(targetR1, minScale * startScale);
         // targetR2 = Mathf.Max(targetR2, minScale * startScale);
@@ -346,7 +407,6 @@ public class ParticleNode
 
         return new Vector3(targetR1, targetR2, midR);
     }
-
 
     private bool CheckForFinishedNodeAfterUpdate()
     {

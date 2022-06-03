@@ -28,6 +28,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
 
     public List<ParticleNode> _particleNodes = new List<ParticleNode>();
+    public List<Matrix4x4> _particleConnectionRotations = new List<Matrix4x4>();
 
     private ParticleSystem.Particle[] _particles;
     private ParticleSystem.Particle[] _activeParticles;
@@ -36,7 +37,8 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private Vector4[] _particleConnections = new Vector4[32];
     private float[] _particleConnectionLengths = new float[32];
-    private Vector4[] _particleConnectionScale = new Vector4[32];
+    [SerializeField]
+    private Vector4[] _particleConnectionData = new Vector4[32];
     private Matrix4x4[] _particleConnectionMatrices = new Matrix4x4[32];
 
 
@@ -66,6 +68,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
     public void Clear()
     {
         _particleNodes = new List<ParticleNode>();
+        _particleConnectionRotations = new List<Matrix4x4>();
 
         ClearArrays();
 
@@ -81,7 +84,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
         _particleTransform = new Vector4[MaxParticles];
         _particleConnections = new Vector4[MaxParticles * 2];
         _particleConnectionLengths = new float[MaxParticles * 2];
-        _particleConnectionScale = new Vector4[MaxParticles * 2];
+        _particleConnectionData = new Vector4[MaxParticles * 2];
         _particleConnectionMatrices = new Matrix4x4[MaxParticles * 2];
     }
 
@@ -129,7 +132,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
         renderMat.SetVectorArray("_ParticleConnections", _particleConnections);
 
         renderMat.SetFloatArray("_ConnectionLengths", _particleConnectionLengths);
-        renderMat.SetVectorArray("_ConnectionScales", _particleConnectionScale);
+        renderMat.SetVectorArray("_ConnectionData", _particleConnectionData);
         renderMat.SetMatrixArray("_ConnectionRotationMatrices", _particleConnectionMatrices.ToArray());
         renderMat.SetFloat("_UnionSmoothness", Mathf.Max(unionSmoothness, 0.001f));
         renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
@@ -216,6 +219,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
     // this happens here because we lerp the fucker over time??
     private void UpdateNodesAndConnections(float time)
     {
+        _particleConnectionRotations = new List<Matrix4x4>();
         float growthvalue = time * connectionGrowthValue;
         _particleConnectionsCount = 0;
 
@@ -231,10 +235,9 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
         _particleNodes.RemoveAll(n => nodesToRemove.Contains(n));
         nodesToRemove = new List<ParticleNode>(); // reset for connections
-
         foreach (ParticleNode node in _particleNodes)
         {
-            node.UpdateNodeConnections(growthvalue, out ParticleNode nodeToRemove);
+            node.UpdateNodeConnections(growthvalue, ref _particleConnectionRotations, out ParticleNode nodeToRemove);
             if (nodeToRemove != null)
             {
                 nodesToRemove.Add(nodeToRemove);
@@ -265,14 +268,18 @@ public class RaymarchParticleBuffer : MonoBehaviour
             _particleTransform[i] = _particleNodes[i].ParticleNodeTransformData();
             _particleConnections[i] = _particleNodes[i].ConnectionShaderData();
 
-            for (int j = 0; j < _particleNodes[i].MyConnectionsCount; j++)
+            // get the scale and rotmatrix Index of every connection
+            for (int j = 0; j < _particleNodes[i].totalConnectionsCount; j++)
             {
-                _particleConnectionLengths[runningIndex] = _particleNodes[i].connections[j].Length;
-                _particleConnectionScale[runningIndex] = _particleNodes[i].connections[j].Scale;
-                _particleConnectionMatrices[runningIndex] = _particleNodes[i].connections[j].Rot;
+                if (_particleNodes[i].AllConnections[j] == null) continue;
+                _particleConnectionData[runningIndex] = _particleNodes[i].AllConnections[j].Data;
                 runningIndex++;
             }
+        }
 
+        for (int k = 0; k < _particleConnectionRotations.Count; k++)
+        {
+            _particleConnectionMatrices[k] = _particleConnectionRotations[k];
         }
 
 
