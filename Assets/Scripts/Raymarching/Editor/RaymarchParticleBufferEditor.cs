@@ -45,6 +45,11 @@ public class RaymarchParticleBufferEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        if (GUILayout.Button("Reset"))
+        {
+            theItem.ResetArrays();
+        }
+
         if (GUILayout.Button("Clear"))
         {
             theItem.Clear();

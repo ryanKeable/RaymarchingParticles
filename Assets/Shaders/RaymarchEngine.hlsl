@@ -1,13 +1,14 @@
 #include "RaymarchFunctions.hlsl"
 
-uniform float4 _Particles[32];
 uniform float4 _ParticleData[32];
-uniform float _ConnectionLengths[32];
-uniform half4 _ConnectionData[32];
+uniform float4 _ConnectionIndexData[32];
+uniform float4 _ConnectionSizeData[32];
 uniform half4x4 _ConnectionRotationMatrices[32];
 
 uniform float3 _ConnectionPos01[32];
 uniform float3 _ConnectionPos02[32];
+
+const float smoothnessScalarCap = 0.5;
 
 int _ParticleCount = 0;
 int _ConnectionCount = 0;
@@ -19,51 +20,51 @@ uniform float _UnionSmoothness;
 // we currently have a rot matrix, not a vector
 // we can either use our sphere pos (another 2 vector LUTs -- we cant find the index here without the logic)
 // we can either create the vector from the rot matrix, or create the rot matrix from the quaternion and the vector from the quaternion?
-float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectionP2, half4x4 rotMat, float3 scales, float smoothness)
-{
-    // float temp = scales.x * (1 - _UnionSmoothness * scales.w) / scales.x * 2; //can factor upto 0.8
-    float h = scales.x;
-    float r1 = scales.y;
-    float r2 = scales.z;
-    float midR = min(r1, r2) * 0.5f; // scale.w
+// float CalcBridgeBetweenParticles(float3 p, float3 connectionP1, float3 connectionP2, half4x4 rotMat, float3 scales, float smoothness)
+// {
+//     // float temp = scales.x * (1 - _UnionSmoothness * scales.w) / scales.x * 2; //can factor upto 0.8
+//     float h = scales.x;
+//     float r1 = scales.y;
+//     float r2 = scales.z;
+//     float midR = min(r1, r2) * 0.5f; // scale.w
 
-    float connection = CappedCone(p - connectionP1, -transpose(rotMat), h, r1, midR, float3(0, h, 0));
-    float flippedConnection = CappedCone(p - connectionP2, transpose(rotMat), h, r2, midR, float3(0, h, 0));
-    return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * smoothness);
-}
+//     float connection = CappedCone(p - connectionP1, -transpose(rotMat), h, r1, midR, float3(0, h, 0));
+//     float flippedConnection = CappedCone(p - connectionP2, transpose(rotMat), h, r2, midR, float3(0, h, 0));
+//     return opSmoothUnion(connection, flippedConnection, _UnionSmoothness * smoothness);
+// }
 
-float CalcBridges(float3 p, float4 particle, float3 particleData, inout int runningIndex)
-{
-    // for each connection we have...
-    int connectionCount = particleData.x; // 2
-    float connections;
-    for (int j = 0; j < connectionCount; j++)
-    {
-        float3 pos = particle.xyz;
-        float h = _ConnectionData[runningIndex].x;
-        float r1 = _ConnectionData[runningIndex].y;
-        float r2 = _ConnectionData[runningIndex].z;
-        int index = _ConnectionData[runningIndex].w;
-        int rotIndex = abs(index);
-        int flip = index / rotIndex;
-        
-        half4x4 rotMatrix = _ConnectionRotationMatrices[rotIndex - 1];
-        // rotMatrix = _4x4Identity;
-        float smoothness = particleData.y;
+// float CalcBridges(float3 p, float4 particle, float3 particleData, inout int runningIndex)
+// {
+//     // for each connection we have...
+//     int connectionCount = particleData.x; // 2
+//     float connections;
+//     for (int j = 0; j < connectionCount; j++)
+//     {
+//         float3 pos = particle.xyz;
+//         float h = _ConnectionData[runningIndex].x;
+//         float r1 = _ConnectionData[runningIndex].y;
+//         float r2 = _ConnectionData[runningIndex].z;
+//         int index = _ConnectionData[runningIndex].w;
+//         int rotIndex = abs(index);
+//         int flip = index / rotIndex;
 
-        float connection = CappedCone(p - pos, flip * transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
-        // float connection = CalcBridgeBetweenParticles(p, startPos, endPos, rotMatrix, float3(h,r1,r2), smoothness);
+//         half4x4 rotMatrix = _ConnectionRotationMatrices[rotIndex - 1];
+//         // rotMatrix = _4x4Identity;
+//         float smoothness = particleData.y;
 
-        if (connections == 0)
-            connections = connection;
-        else
-            connections = opSmoothUnion(connections, connection, _UnionSmoothness * smoothness); // this makes the previous union fatter
-        
-        runningIndex++;
-    }
+//         float connection = CappedCone(p - pos, flip * transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
+//         // float connection = CalcBridgeBetweenParticles(p, startPos, endPos, rotMatrix, float3(h,r1,r2), smoothness);
 
-    return connections;
-}
+//         if (connections == 0)
+//             connections = connection;
+//         else
+//             connections = opSmoothUnion(connections, connection, _UnionSmoothness * smoothness); // this makes the previous union fatter
+
+//         runningIndex++;
+//     }
+
+//     return connections;
+// }
 
 
 float GetDistance(float3 p)
@@ -74,22 +75,41 @@ float GetDistance(float3 p)
     if (_ParticleCount == 0)
         return -1;
 
+    // particle nodes
     // UNITY_UNROLL
     for (int i = 0; i < _ParticleCount; i++)
     {
-        float sphere = Sphere(p - _Particles[i].xyz, _Particles[i].w);
-        
+        float sphere = Sphere(p - _ParticleData[i].xyz, _ParticleData[i].w);
+        float smoothness = _ParticleData[i].w * _UnionSmoothness;
+
         if (scene == 0)
             scene = sphere;
         else
-            scene = opSmoothUnion(scene, sphere, _UnionSmoothness * _Particles[i].w);
-        
-        if (_ParticleData[i].x == 0) continue; // do not calcc bridges if we have none
-
-        float connections = CalcBridges(p, _Particles[i], _ParticleData[i], runningIndex); // generates the connections and fuses them together
-        scene = opSmoothUnion(scene, connections, _UnionSmoothness * _Particles[i].w); // this connects the sphere to the connections
-
+            scene = opSmoothUnion(scene, sphere, smoothness);
     }
+
+    // particle connections
+    for (int j = 0; j < _ConnectionCount; j++)
+    {
+        float h = _ConnectionSizeData[j].x;
+        float r1 = _ConnectionSizeData[j].y;
+        float r2 = _ConnectionSizeData[j].z;
+        float smoothnessScalar = _ConnectionSizeData[j].w; //min(_ConnectionSizeData[j].w, smoothnessScalarCap);
+        
+        int posIndex = _ConnectionIndexData[j].x;
+        float3 pos = _ParticleData[posIndex].xyz;
+
+        int rotIndex = _ConnectionIndexData[j].y;
+        int absRotIndex = abs(rotIndex);
+        int rotInversion = rotIndex / absRotIndex;
+        
+        half4x4 rotMatrix = _ConnectionRotationMatrices[absRotIndex - 1];
+
+        float cappedCone = CappedCone(p - pos, rotInversion * transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
+        
+        scene = opSmoothUnion(scene, cappedCone, _UnionSmoothness * smoothnessScalar);
+    }
+
 
     return scene;
 }

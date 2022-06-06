@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -184,7 +184,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleNodesCount
-      value: 3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleConnectionsCount
@@ -192,7 +192,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleNodes.Array.size
-      value: 3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleNodes.Array.data[0].id
@@ -608,7 +608,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleConnectionRotations.Array.size
-      value: 5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3732663233949496711, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: _particleNodes.Array.data[0].isDecaying
@@ -1468,7 +1468,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: ShapeModule.arc.mode
-      value: 3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: VelocityModule.enabled
@@ -1484,7 +1484,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6608446560685347202, guid: b6e8d669359751f4c8bae24f37e398db, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
