@@ -12,15 +12,19 @@ public static class Utils
     private static Transform _transform;
     private static List<float> _distances;
     // private static ParticleNode[] _particlesNodes;
+    private static float unionSmoothness;
+    public static int MaxConnections { get => maxConnections; }
+    public static float SmoothnessCap { get => smoothCap; }
+    public static float Smoothness { get => unionSmoothness; }
 
     const int maxConnections = 3;
+    const float smoothCap = 0.2f;
 
-    public static int MaxConnections { get => maxConnections; }
-
-    public static void AllocateResources(ParticleSystem _particeSystem, Transform _localTransform)
+    public static void AllocateResources(ParticleSystem _particeSystem, Transform _localTransform, float _smoothness)
     {
         _system = _particeSystem;
         _transform = _localTransform;
+        unionSmoothness = _smoothness;
     }
 
     // public static void FindCloseConnections(ParticleNode[] _activeNodes, ParticleNode _thisNode, float _distThrehold)
@@ -132,6 +136,14 @@ public static class Utils
     public static Vector3 ParticlePostionToWorld(ParticleSystem.Particle _particle)
     {
         return _transform.InverseTransformPoint(_particle.position);
+    }
+
+    public static float CappedSmootheness(float scalar)
+    {
+        // if we are greater or equal to 0.2, set 1 or else be the scalar
+        float smoothness = scalar >= smoothCap ? 1 : scalar; // any value over the cap, we want to be one
+        smoothness *= unionSmoothness;
+        return smoothness;
     }
 
 

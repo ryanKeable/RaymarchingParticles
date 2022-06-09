@@ -8,15 +8,23 @@ using UnityEditor;
 public class RaymarchParticleBufferEditor : Editor
 {
 
+    static RaymarchParticleBufferEditor bufferEditor;
     RaymarchParticleBuffer theItem;
-    static double timeSinceStartUp = 0f;
+
+    double timeSinceStartUp = 0f;
 
     private void OnEnable()
     {
+        // AssignTargets();
         theItem = target as RaymarchParticleBuffer;
         EditorApplication.update += Update;
         SceneView.duringSceneGui += OnSceneGUI;
+    }
 
+    private void AssignTargets()
+    {
+        if (bufferEditor == null) bufferEditor = new RaymarchParticleBufferEditor();
+        if (theItem == null) theItem = target as RaymarchParticleBuffer;
     }
 
     private void OnDisable()
@@ -47,7 +55,7 @@ public class RaymarchParticleBufferEditor : Editor
     {
         if (GUILayout.Button("Reset"))
         {
-            theItem.ResetArrays();
+            theItem.Reset();
         }
 
         if (GUILayout.Button("Clear"))
@@ -56,6 +64,7 @@ public class RaymarchParticleBufferEditor : Editor
         }
         base.DrawDefaultInspector();
     }
+
 
     private void OnSceneGUI(SceneView _sceneView)
     {
@@ -79,5 +88,25 @@ public class RaymarchParticleBufferEditor : Editor
         Vector3 renderP = new Vector3(_point.x * trans.localScale.x, _point.y * trans.localScale.y, _point.z * trans.localScale.z);
         renderP += trans.position;
         return renderP;
+    }
+
+
+    [UnityEditor.Callbacks.DidReloadScripts]
+    private static void StopOnCompile()
+    {
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+        {
+            EditorApplication.delayCall += StopOnCompile;
+            return;
+        }
+
+        EditorApplication.delayCall += StopSystem;
+    }
+
+    private static void StopSystem()
+    {
+        MDebug.LogOrange($"Stop system on Compile");
+        // if (bufferEditor == null) bufferEditor.AssignTargets();
+        // theItem.Reset();
     }
 }

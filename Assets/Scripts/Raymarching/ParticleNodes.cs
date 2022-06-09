@@ -31,33 +31,40 @@ public class ParticleNode
     // 
     private List<ParticleNode> closeNodes = new List<ParticleNode>();
 
-    [SerializeField]
+    // [SerializeField]
     private List<ParticleConnection> myConnections = new List<ParticleConnection>();
-    [SerializeField]
+    // [SerializeField]
     private List<ParticleConnection> refConnections = new List<ParticleConnection>();
 
     private float startScale;
     private float stretchScale;
     private float distThreshold;
     private float minScale;
-    private float smoothness;
+    private float connectionScalar;
 
     float decayPercent = 0.25f;//{ get => connectionScalar * 0.25f; }
 
-    public float connectionScalar;
-
-    public Vector4 ParticleData()
+    public Vector4 ParticleNodePos()
     {
-        return new Vector4(totalConnectionsCount, ScalePercent() * connectionScalar, 0, 0); // this will fail big time
+        return new Vector4(particlePosition.x, particlePosition.y, particlePosition.z, 0);
     }
 
-    public ParticleNode(ParticleSystem.Particle _particle, float _stretchScale, float _distThreshold, float _minScale, float _smoothness)
+    public Vector4 ParticleNodeScalars()
+    {
+        // *Mathf.Pow(connectionScalar, totalConnectionsCount); // do this afterwards??
+        float scale = particleScale;
+        float scalePercent = Utils.CappedSmootheness(ScalePercent()); // any value over the cap, we want to be one
+
+        return new Vector4(scale, scalePercent, 0, 0);
+
+    }
+
+    public ParticleNode(ParticleSystem.Particle _particle, float _stretchScale, float _distThreshold, float _minScale)
     {
         id = _particle.randomSeed;
         stretchScale = _stretchScale;
         distThreshold = _distThreshold / 2;
         minScale = _minScale;
-        smoothness = _smoothness;
 
 
         myConnections = new List<ParticleConnection>();
@@ -116,9 +123,9 @@ public class ParticleNode
 
         isAlive = theParticle != null;
 
-        particlePosition = ParticlePosition(theParticle);
-        particleScale = ParticleScales(theParticle);
-        particleRemainingLife = ParticleRemainingLifetime(theParticle);
+        particlePosition = GetParticlePosition(theParticle);
+        particleScale = GetParticleScales(theParticle);
+        particleRemainingLife = GetParticleRemainingLifetime(theParticle);
         isMature = IsMature();
         isDecaying = IsDecaying();
     }
@@ -168,28 +175,20 @@ public class ParticleNode
 
     }
 
-    public Vector4 ParticleNodeTransformData()
-    {
-        Vector3 position = particlePosition;
-        float scale = particleScale * Mathf.Pow(connectionScalar, totalConnectionsCount); // do this afterwards??
-
-        return new Vector4(position.x, position.y, position.z, scale);
-    }
-
-    private Vector3 ParticlePosition(ParticleSystem.Particle? _particle)
+    private Vector3 GetParticlePosition(ParticleSystem.Particle? _particle)
     {
         if (_particle == null) return particlePosition;
         return Utils.ParticlePostionToWorld((ParticleSystem.Particle)_particle);
     }
 
-    private float ParticleScales(ParticleSystem.Particle? _particle)
+    private float GetParticleScales(ParticleSystem.Particle? _particle)
     {
         if (_particle == null) return 0;
         startScale = Utils.ParticleStartSizeToLocalTransform((ParticleSystem.Particle)_particle);
         return Utils.CurrentParticleSizeToLocalTransform((ParticleSystem.Particle)_particle);
     }
 
-    private float ParticleRemainingLifetime(ParticleSystem.Particle? _particle)
+    private float GetParticleRemainingLifetime(ParticleSystem.Particle? _particle)
     {
         if (_particle == null) return 0;
         ParticleSystem.Particle p = (ParticleSystem.Particle)_particle;
@@ -235,7 +234,7 @@ public class ParticleNode
             return;
         }
 
-        float targetScalar = 1 - smoothness * totalConnectionsCount;
+        float targetScalar = 1 - Utils.Smoothness * totalConnectionsCount;
         float elapsedTime = 1.0f;
         if (connectionScalar != targetScalar)
         {
@@ -277,7 +276,7 @@ public class ParticleNode
         }
 
         // finish setting data
-        // only do this if we are not eing removed
+        // only do this if we are not being removed
         float length = LerpLength(dist, lerpValue) / 2;
         Vector3 capScales = LerpConnectionScale(refScale, refConnectionScalar, lerpValue);
         rotations.Add(rot);
@@ -329,10 +328,6 @@ public class ParticleNode
 
         float fullLengthStretch = lerpValue * (1 - stretchScale); // this can be 0 -- we dont want that we want 1->0.5
         float midR = Mathf.Min(targetR1, targetR2) * 0.66f * (lerpValue - fullLengthStretch);
-
-        // targetR1 = Mathf.Max(targetR1, minScale * startScale);
-        // targetR2 = Mathf.Max(targetR2, minScale * startScale);
-        // midR = Mathf.Max(midR, minScale * startScale);
 
         return new Vector3(targetR1, targetR2, midR);
     }

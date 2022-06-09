@@ -51,7 +51,9 @@ public class ParticleConnection
 
     public void SetConnectionSizeData(float _length, float _radius1, float _radius2, float _lerpValue)
     {
-        _sizeData = new Vector4(_length, _radius1, _radius2, _lerpValue);
+        float smoothness = Utils.CappedSmootheness(_lerpValue);
+
+        _sizeData = new Vector4(_length, _radius1, _radius2, smoothness);
     }
 
 }

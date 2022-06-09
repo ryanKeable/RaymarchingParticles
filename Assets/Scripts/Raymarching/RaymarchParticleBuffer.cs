@@ -9,9 +9,7 @@ using System.Linq;
 "Property (_ConnectionData) exceeds previous array size (7 vs 6). Cap to previous size. Restart Unity to recreate the arrays.
 UnityEngine.Material:SetVectorArray (string,UnityEngine.Vector4[])"
 
--- fix up how we are collection and storing our nodes, connections and matrices
--- scale nodes down when connecitons are made
--- clear arrays if we need to? 
+ -- clean up connection storage
 
 */
 
@@ -29,28 +27,38 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
 
     public List<ParticleNode> _particleNodes = new List<ParticleNode>();
-    public List<Matrix4x4> _particleConnectionRotations = new List<Matrix4x4>();
+    private List<Matrix4x4> _particleConnectionRotations = new List<Matrix4x4>();
 
     private ParticleSystem.Particle[] _particles;
     private ParticleSystem.Particle[] _activeParticles;
 
-    private Vector4[] _particleNodeData;
+
+    // make sure these are pricvate in the end
+    public int _particlesCount;
+    public int _particleNodesCount;
+    public int _particleConnectionsCount;
+
+    public float debugFirstValue;
+    public Vector3 debugRow;
+    public Vector3 debugColoumn;
+
+    private Vector4[] _particleNodePos;
+    [SerializeField]
+    private Vector4[] _particleNodeScalars;
     private Vector4[] _particleConnectionIndexData;
+    [SerializeField]
     private Vector4[] _particleConnectionSizeData;
     private Matrix4x4[] _particleConnectionMatrices;
 
 
-    public int _particleNodesCount;
-    public int _particleConnectionsCount;
-    private int _particlesCount;
+
     private const int MaxParticles = 16;
 
     public int Connections { get => _particleNodes.Count; }
 
     private void OnEnable()
     {
-        Clear();
-        ResetArrays();
+        Reset();
     }
 
     private void LateUpdate()
@@ -61,10 +69,9 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void OnValidate()
     {
-        ResetArrays();
+        Reset();
     }
 
-    // this only renders correctly after a re-compile?
     public void SetRaymarchParticleBuffer(float time)
     {
         if (!this.gameObject.activeInHierarchy) return;
@@ -75,7 +82,8 @@ public class RaymarchParticleBuffer : MonoBehaviour
             return;
         }
 
-        Initialize();
+        InitializeParticleData();
+        Utils.AllocateResources(particleSystemToRender, transform, unionSmoothness);
         GatherParticleSystemData();
 
 
@@ -91,33 +99,13 @@ public class RaymarchParticleBuffer : MonoBehaviour
         SetNodeParticleData();
         SetParticleConnectionData(time);
 
-
         SetParticleMaterialProps();
         SetConnectionMaterialProps();
+
     }
 
-    private void SetParticleMaterialProps()
-    {
-        if (_particleNodeData.Length <= 0 || _particleNodesCount == 0) return;
 
-
-        renderMat.SetVectorArray("_ParticleData", _particleNodeData);
-        renderMat.SetInt("_ParticleCount", _particleNodesCount);
-    }
-
-    private void SetConnectionMaterialProps()
-    {
-        if (_particleConnectionSizeData.Length <= 0 || _particleConnectionIndexData.Length <= 0 || _particleConnectionMatrices.Length <= 0) return;
-
-        renderMat.SetVectorArray("_ConnectionIndexData", _particleConnectionIndexData);
-        renderMat.SetVectorArray("_ConnectionSizeData", _particleConnectionSizeData);
-        renderMat.SetMatrixArray("_ConnectionRotationMatrices", _particleConnectionMatrices);
-        renderMat.SetFloat("_UnionSmoothness", Mathf.Max(unionSmoothness, 0.001f));
-        renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
-        renderMat.SetInt("_ConnectionCount", _particleConnectionsCount);
-    }
-
-    private void Initialize()
+    private void InitializeParticleData()
     {
         if (particleSystemToRender.main.maxParticles != MaxParticles)
         {
@@ -129,51 +117,70 @@ public class RaymarchParticleBuffer : MonoBehaviour
         if (_particles == null || _particles.Length < particleSystemToRender.main.maxParticles)
             _particles = new ParticleSystem.Particle[particleSystemToRender.main.maxParticles];
 
-        if (_particleNodeData == null) _particleNodeData = new Vector4[MaxParticles];
-
-        Utils.AllocateResources(particleSystemToRender, transform);
-
     }
 
     private void GatherParticleSystemData()
     {
         if (particleSystemToRender.isEmitting) _particlesCount = particleSystemToRender.GetParticles(_particles);
-        _activeParticles = new ParticleSystem.Particle[_particlesCount];
+        _activeParticles = new ParticleSystem.Particle[_particlesCount]; // this is expensive?
         particleSystemToRender.GetParticles(_activeParticles, _particlesCount);
 
         if (_particlesCount == 0) Clear();
     }
 
-    public void Clear()
+    public void Reset()
     {
-        _particleNodes.Clear();
-        _particleConnectionRotations.Clear();
-
-        ClearArrays();
-
-        _particlesCount = 0;
-        _particleNodesCount = 0;
-
+        ResetLists();
+        ResetArrays();
+        ResetParticleCounts();
         SetParticleMaterialProps();
         SetConnectionMaterialProps();
     }
 
+    public void Clear()
+    {
+        ClearLists();
+        ClearArrays();
+        ResetParticleCounts();
+        SetParticleMaterialProps();
+        SetConnectionMaterialProps();
+    }
+
+    void ClearLists()
+    {
+        _particleNodes.Clear();
+        _particleConnectionRotations.Clear();
+    }
+
     void ClearArrays()
     {
-        if (_particleNodeData != null) Array.Clear(_particleNodeData, 0, _particleNodeData.Length);
+        if (_particleNodePos != null) Array.Clear(_particleNodePos, 0, _particleNodePos.Length);
+        if (_particleNodeScalars != null) Array.Clear(_particleNodeScalars, 0, _particleNodeScalars.Length);
         if (_particleConnectionSizeData != null) Array.Clear(_particleConnectionSizeData, 0, _particleConnectionSizeData.Length);
         if (_particleConnectionIndexData != null) Array.Clear(_particleConnectionIndexData, 0, _particleConnectionIndexData.Length);
         if (_particleConnectionMatrices != null) Array.Clear(_particleConnectionMatrices, 0, _particleConnectionMatrices.Length);
-
     }
 
-    public void ResetArrays()
+    void ResetLists()
     {
-        _particleNodeData = new Vector4[MaxParticles];
-        _particleConnectionSizeData = new Vector4[MaxParticles * 2];
-        _particleConnectionIndexData = new Vector4[MaxParticles * 2];
-        _particleConnectionMatrices = new Matrix4x4[MaxParticles * 2];
+        _particleNodes = new List<ParticleNode>();
+        _particleConnectionRotations = new List<Matrix4x4>();
+    }
 
+    void ResetArrays()
+    {
+        _particleNodePos = new Vector4[MaxParticles];
+        _particleNodeScalars = new Vector4[MaxParticles];
+        _particleConnectionSizeData = new Vector4[MaxParticles * Utils.MaxConnections];
+        _particleConnectionIndexData = new Vector4[MaxParticles * Utils.MaxConnections];
+        _particleConnectionMatrices = new Matrix4x4[MaxParticles * Utils.MaxConnections];
+    }
+
+    void ResetParticleCounts()
+    {
+        _particlesCount = 0;
+        _particleNodesCount = 0;
+        _particleConnectionsCount = 0;
     }
 
     private void TrackParticleNodes()
@@ -192,7 +199,7 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
             if (!particleIsTracked)
             {
-                ParticleNode newParticle = new ParticleNode(_activeParticles[i], connectionStretchScale, distThreshold, minConnectionScale, unionSmoothness);
+                ParticleNode newParticle = new ParticleNode(_activeParticles[i], connectionStretchScale, distThreshold, minConnectionScale);
                 _particleNodes.Add(newParticle);
             }
         }
@@ -210,10 +217,11 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
     private void SetParticleConnectionData(float time)
     {
-        if (_particleNodesCount == 0) return;
+        if (_particleNodesCount == 0 || _particlesCount == 0) return;
         FindNewConnections();
         UpdateNodesAndConnections(time);
-        SetShaderArrayData();
+        SetNodeArrayData();
+        SetConnectionArrayData();
     }
 
     private void FindNewConnections()
@@ -231,7 +239,6 @@ public class RaymarchParticleBuffer : MonoBehaviour
 
         _particleConnectionRotations.Clear();
         float growthvalue = time * connectionGrowthValue;
-        _particleConnectionsCount = 0;
 
         // foreach (ParticleNode node in _particleNodes)
         // {
@@ -260,16 +267,20 @@ public class RaymarchParticleBuffer : MonoBehaviour
     }
 
     // we still need to assign the positions of our target connection as the node may not exist while we still need to access the location
-    private void SetShaderArrayData()
+    private void SetNodeArrayData()
     {
-        ClearArrays();
 
         for (int i = 0; i < _particleNodesCount; i++)
         {
-            _particleNodes[i].SetIndex(Array.IndexOf(_particleNodes.ToArray(), _particleNodes[i]));
-            _particleNodeData[i] = _particleNodes[i].ParticleNodeTransformData();
+            _particleNodes[i].SetIndex(Array.IndexOf(_particleNodes.ToArray(), _particleNodes[i])); // this needs to happen after we have removed nodes
+            _particleNodePos[i] = _particleNodes[i].ParticleNodePos();
+            _particleNodeScalars[i] = _particleNodes[i].ParticleNodeScalars();
         }
 
+    }
+
+    private void SetConnectionArrayData()
+    {
         // this is a bit sloppy but we can fix it up laer
         var queryTotalConnections = (ParticleConnection[])_particleNodes.SelectMany(n => n.AllConnections).ToArray();
         _particleConnectionsCount = queryTotalConnections.Length;
@@ -283,26 +294,35 @@ public class RaymarchParticleBuffer : MonoBehaviour
         {
             _particleConnectionMatrices[k] = _particleConnectionRotations[k];
         }
-
-
-        // var connectionQuery = _particleNodes.SelectMany(n => n.connections).ToArray();
-        // for (int j = 0; j < _particleConnectionsCount; j++)
-        // {
-        //     _particleConnectionPos01[j] = connectionQuery[j].StartPos;
-        //     _particleConnectionPos02[j] = connectionQuery[j].EndPos;
-        //     _particleConnectionMatrices[j] = connectionQuery[j].Rot;
-        //     _particleConnectionScale[j] = connectionQuery[j].Scale;
-        // }
-
     }
+
+    private void SetParticleMaterialProps()
+    {
+        renderMat.SetVectorArray("_ParticleNodePos", _particleNodePos);
+        renderMat.SetVectorArray("_ParticleNodeScalars", _particleNodeScalars);
+        renderMat.SetInt("_ParticleCount", _particleNodesCount);
+    }
+
+    private void SetConnectionMaterialProps()
+    {
+        if (_particleConnectionSizeData.Length <= 0 || _particleConnectionIndexData.Length <= 0 || _particleConnectionMatrices.Length <= 0) return;
+
+        renderMat.SetVectorArray("_ConnectionIndexData", _particleConnectionIndexData);
+        renderMat.SetVectorArray("_ConnectionSizeData", _particleConnectionSizeData);
+        renderMat.SetMatrixArray("_ConnectionRotationMatrices", _particleConnectionMatrices);
+        renderMat.SetFloat("_UnionSmoothness", Mathf.Max(unionSmoothness, 0.001f));
+        renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
+        renderMat.SetInt("_ConnectionCount", _particleConnectionsCount);
+    }
+
 
     public void EditorUpdate(float time)
     {
         SetRaymarchParticleBuffer(time);
     }
+
 }
 
 // particles cannot control both ends of the connections AS we need to adjust the smoothness on each end
 // connection data should only focus on the half connected to the node
 // we need to look at all the connections for each particle
-// find a way to keep the matrix array the same length (re-use the index) -- maybe a pointer at some point??

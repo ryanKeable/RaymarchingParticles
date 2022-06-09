@@ -1,12 +1,10 @@
 #include "RaymarchFunctions.hlsl"
 
-uniform float4 _ParticleData[32];
+uniform float3 _ParticleNodePos[32];
+uniform float3 _ParticleNodeScalars[32];
 uniform float4 _ConnectionIndexData[32];
 uniform float4 _ConnectionSizeData[32];
 uniform half4x4 _ConnectionRotationMatrices[32];
-
-uniform float3 _ConnectionPos01[32];
-uniform float3 _ConnectionPos02[32];
 
 const float smoothnessScalarCap = 0.5;
 
@@ -66,38 +64,41 @@ uniform float _UnionSmoothness;
 //     return connections;
 // }
 
-
-float GetDistance(float3 p)
+void ParticleNodes(float3 p, inout float scene)
 {
-    int runningIndex = 0;
-    float scene = 0;
-
-    if (_ParticleCount == 0)
-        return -1;
-
     // particle nodes
     // UNITY_UNROLL
     for (int i = 0; i < _ParticleCount; i++)
     {
-        float sphere = Sphere(p - _ParticleData[i].xyz, _ParticleData[i].w);
-        float smoothness = _ParticleData[i].w * _UnionSmoothness;
+
+        float3 pos = _ParticleNodePos[i];
+        float scale = _ParticleNodeScalars[i].x;
+        float smoothness = _ParticleNodeScalars[i].y;
+
+
+        if (scale <= 0.001f) continue; // we are miniscule, do not compute
+
+        float node = Sphere(p - pos, scale);
 
         if (scene == 0)
-            scene = sphere;
+            scene = node;
         else
-            scene = opSmoothUnion(scene, sphere, smoothness);
+            scene = opSmoothUnion(scene, node, smoothness);
     }
+}
 
+void ParticleNodeConnections(float3 p, inout float scene)
+{
     // particle connections
     for (int j = 0; j < _ConnectionCount; j++)
     {
         float h = _ConnectionSizeData[j].x;
         float r1 = _ConnectionSizeData[j].y;
         float r2 = _ConnectionSizeData[j].z;
-        float smoothnessScalar = _ConnectionSizeData[j].w; //min(_ConnectionSizeData[j].w, smoothnessScalarCap);
+        float smoothness = _ConnectionSizeData[j].w;
         
         int posIndex = _ConnectionIndexData[j].x;
-        float3 pos = _ParticleData[posIndex].xyz;
+        float3 pos = _ParticleNodePos[posIndex].xyz;
 
         int rotIndex = _ConnectionIndexData[j].y;
         int absRotIndex = abs(rotIndex);
@@ -107,10 +108,22 @@ float GetDistance(float3 p)
 
         float cappedCone = CappedCone(p - pos, rotInversion * transpose(rotMatrix), h, r1, r2, float3(0, h, 0));
         
-        scene = opSmoothUnion(scene, cappedCone, _UnionSmoothness * smoothnessScalar);
+        
+        scene = opSmoothUnion(scene, cappedCone, smoothness);
     }
+}
 
+float GetDistance(float3 p)
+{
+    int runningIndex = 0;
+    float scene = 0;
 
+    if (_ParticleCount == 0)
+        return -1;
+    
+    ParticleNodes(p, scene);
+    ParticleNodeConnections(p, scene);
+    
     return scene;
 }
 
@@ -145,15 +158,15 @@ float Raymarch(float3 rayOrigin, float3 rayDir)
     return distanceFromOrigin;
 }
 
-float3 RenderRaymarch(float2 uv, float3 rayOrigin, float3 hitPos)
+half3 RenderRaymarch(float2 uv, float3 rayOrigin, float3 hitPos)
 {
     uv -= 0.5;
 
     half3 col = 0;
     float3 rayDir = normalize(hitPos - rayOrigin);
     float distance = Raymarch(rayOrigin, rayDir);
-
-    if (distance > MAX_DIST || distance < 0) discard;// hit surface
+    
+    if (distance > MAX_DIST || distance <= 0) discard;// hit surface
 
     float3 pos = rayOrigin + rayDir * distance;
     float3 normal = GetNormal(pos);
@@ -161,6 +174,6 @@ float3 RenderRaymarch(float2 uv, float3 rayOrigin, float3 hitPos)
     //TODO:
     // - make sure we convert to world normals?
     col = normal;
-
+    
     return col;
 }
