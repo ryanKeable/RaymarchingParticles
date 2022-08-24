@@ -30,6 +30,11 @@ public class RaymarchShapeBufferEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        string toggleKey = theItem.ConnectionsRenderToggle ? "Off" : "On";
+        if (GUILayout.Button($"Toggle Connection Rendering: {toggleKey}"))
+        {
+            theItem.ToggleConnectionRendering();
+        }
 
         base.DrawDefaultInspector();
     }

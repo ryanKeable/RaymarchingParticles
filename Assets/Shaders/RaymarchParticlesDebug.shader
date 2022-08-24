@@ -24,6 +24,8 @@ Shader "Raymarch/RaymarchParticlesDebug"
             #pragma vertex vertex
             #pragma fragment fragment
 
+            #pragma shader_feature _DISABLE_CONNECTIONS
+
             #include "RaymarchInput.hlsl"
             #include "RaymarchEngineDebug.hlsl"
             

@@ -29,6 +29,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 8, y: 8, z: 8}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6099315940777964880}
   m_Father: {fileID: 0}
@@ -53,6 +54,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -97,131 +99,150 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particleSystemToRender: {fileID: 6608446560685347202}
   unionSmoothness: 0.2
-  distThreshold: 3
-  minConnectionScale: 0.05
+  distThreshold: 2
+  minConnectionScale: 0.01
   connectionGrowthValue: 1
-  connectionStretchScale: 0.8
+  connectionStretchScale: 0.75
   renderMat: {fileID: 2100000, guid: b9bb1065bda5c6d40988cb0a0bbe5688, type: 2}
-  _particleNodes:
-  - id: 3193718118
+  particleNodes:
+  - id: 2795960598
     index: 0
-    particlePosition: {x: -0.2093275, y: 0.19932689, z: 0.1511734}
-    particleScale: 0.0040366147
-    particleRemainingLife: 0.25700513
+    particlePosition: {x: 0, y: 0.5771125, z: 0.000000034398578}
+    particleScale: 0.00046369224
+    particleScalePercent: 0.006652231
+    particleRemainingLife: 0.12176321
+    particleLifePercent: 0.97641057
+    connectionScalar: 1
     isAlive: 1
     isMature: 0
-    isDecaying: 1
+    isDying: 1
     connectionIDs: 
-    connectionScalar: 1
-  - id: 4244333774
+    totalConnectionScalar: 1
+  - id: 930206775
     index: 1
-    particlePosition: {x: -0.24660642, y: 0.49234992, z: 0.13940641}
-    particleScale: 0.09046706
-    particleRemainingLife: 1.4190696
+    particlePosition: {x: 0.5561758, y: 0, z: 0}
+    particleScale: 0.084716804
+    particleScalePercent: 0.72708774
+    particleRemainingLife: 1.8547152
+    particleLifePercent: 0.73099464
+    connectionScalar: 1
     isAlive: 1
     isMature: 1
-    isDecaying: 0
-    connectionIDs: 3b442a11a66b0d57a790dcd2
-    connectionScalar: 0.66733
-  - id: 4201260354
+    isDying: 0
+    connectionIDs: 
+    totalConnectionScalar: 1
+  - id: 3276206017
     index: 2
-    particlePosition: {x: -0.37405825, y: -0.28161186, z: 0.07280887}
-    particleScale: 0.06614353
-    particleRemainingLife: 0.88759017
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: 3b442a11a66b0d57d035b91c
-    connectionScalar: 0.665504
-  - id: 3537670311
-    index: 3
-    particlePosition: {x: 0.221545, y: -0.15100676, z: 0.28961483}
-    particleScale: 0.12135486
-    particleRemainingLife: 2.0405235
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: a66b0d57ce64fbfcd035b91c3fd50b34
-    connectionScalar: 0.56048894
-  - id: 287982651
-    index: 4
-    particlePosition: {x: 0.065358415, y: -0.4037557, z: -0.23717622}
-    particleScale: 0.12270517
-    particleRemainingLife: 1.8033468
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: ce64fbfc42256afad035b91c3fd50b3420c27d75
-    connectionScalar: 0.45617115
-  - id: 1460497318
-    index: 5
-    particlePosition: {x: 0.4313678, y: -0.0032560884, z: -0.19891398}
-    particleScale: 0.12375636
-    particleRemainingLife: 2.1972349
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: ce64fbfc42256afaa790dcd23fd50b3420c27d7501aaf4cb
-    connectionScalar: 0.35080078
-  - id: 481899984
-    index: 6
-    particlePosition: {x: 0.18893145, y: 0.1116782, z: 0.3330793}
-    particleScale: 0.06798281
-    particleRemainingLife: 4.490715
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: 42256afaa790dcd23b442a1120c27d7501aaf4cb
-    connectionScalar: 0.46162415
-  - id: 873190719
-    index: 7
-    particlePosition: {x: 0.11271641, y: -0.10938977, z: 0.353355}
-    particleScale: 0.051612884
-    particleRemainingLife: 3.5972488
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: a790dcd23b442a11a66b0d5701aaf4cb
-    connectionScalar: 0.57260656
-  - id: 3421809153
-    index: 8
-    particlePosition: {x: -0.3453163, y: -0.024417011, z: 0.23854722}
-    particleScale: 0.036859103
-    particleRemainingLife: 4.463572
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: a66b0d57d035b91c3fd50b34
-    connectionScalar: 0.68163204
-  - id: 1971175968
-    index: 9
-    particlePosition: {x: -0.15324838, y: 0.12848578, z: 0.37809634}
-    particleScale: 0.04783227
-    particleRemainingLife: 3.7213423
-    isAlive: 1
-    isMature: 1
-    isDecaying: 0
-    connectionIDs: 3b442a11a66b0d57d035b91c
-    connectionScalar: 0.6790303
-  - id: 1588186262
-    index: 10
-    particlePosition: {x: -0.12930325, y: 0.15676376, z: -0.2528075}
-    particleScale: 0.0065736375
-    particleRemainingLife: 5.3255477
+    particlePosition: {x: 0, y: -0.57732856, z: -0.000000034411457}
+    particleScale: 0.022684824
+    particleScalePercent: 0.29978856
+    particleRemainingLife: 0.8760075
+    particleLifePercent: 0.8519261
+    connectionScalar: 1
     isAlive: 1
     isMature: 0
-    isDecaying: 0
+    isDying: 1
     connectionIDs: 
+    totalConnectionScalar: 1
+  - id: 3206573581
+    index: 3
+    particlePosition: {x: -0.6517418, y: 0, z: 0}
+    particleScale: 0.043227788
+    particleScalePercent: 0.5167309
+    particleRemainingLife: 1.2965907
+    particleLifePercent: 0.79538083
     connectionScalar: 1
-  _particleConnections:
+    isAlive: 1
+    isMature: 1
+    isDying: 0
+    connectionIDs: 
+    totalConnectionScalar: 1
+  - id: 4068244936
+    index: 4
+    particlePosition: {x: 0.20333087, y: 0, z: 0}
+    particleScale: 0.000023686522
+    particleScalePercent: 0.0003206416
+    particleRemainingLife: 6.6082864
+    particleLifePercent: 0.0060165823
+    connectionScalar: 1
+    isAlive: 1
+    isMature: 0
+    isDying: 0
+    connectionIDs: 
+    totalConnectionScalar: 1
+  - id: 3143185043
+    index: 5
+    particlePosition: {x: 0, y: -0.19328122, z: -0.000000011520454}
+    particleScale: 0.000037843234
+    particleScalePercent: 0.00031446666
+    particleRemainingLife: 6.6634994
+    particleLifePercent: 0.005967027
+    connectionScalar: 1
+    isAlive: 1
+    isMature: 0
+    isDying: 0
+    connectionIDs: 
+    totalConnectionScalar: 1
+  - id: 1075600354
+    index: 6
+    particlePosition: {x: -0.22343814, y: 0, z: 0}
+    particleScale: 0.00008168242
+    particleScalePercent: 0.00076346856
+    particleRemainingLife: 4.50256
+    particleLifePercent: 0.008805599
+    connectionScalar: 1
+    isAlive: 1
+    isMature: 0
+    isDying: 0
+    connectionIDs: 
+    totalConnectionScalar: 1
+  - id: 1320579325
+    index: 7
+    particlePosition: {x: 0, y: 0.3421613, z: 0.000000020394397}
+    particleScale: 0.00006755571
+    particleScalePercent: 0.0009407124
+    particleRemainingLife: 4.092512
+    particleLifePercent: 0.009679333
+    connectionScalar: 1
+    isAlive: 1
+    isMature: 0
+    isDying: 0
+    connectionIDs: 
+    totalConnectionScalar: 1
+  particleConnections: []
+  _particlesCount: 8
+  _particleNodesCount: 8
+  _particleConnectionsCount: 0
+  debugFirstValue: 0
+  debugRow: {x: 0, y: 0, z: 0}
+  debugColoumn: {x: 0, y: 0, z: 0}
+  _particleNodeScalars:
+  - {x: 0.00046369224, y: 0.0013304462, z: 0, w: 0}
+  - {x: 0.084716804, y: 0.14541756, z: 0, w: 0}
+  - {x: 0.022684824, y: 0.059957713, z: 0, w: 0}
+  - {x: 0.043227788, y: 0.103346184, z: 0, w: 0}
+  - {x: 0.000023686522, y: 0.00006412832, z: 0, w: 0}
+  - {x: 0.000037843234, y: 0.000062893334, z: 0, w: 0}
+  - {x: 0.00008168242, y: 0.00015269371, z: 0, w: 0}
+  - {x: 0.00006755571, y: 0.00018814248, z: 0, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 3, y: 4, z: 5, w: 3}
-  - {x: 3, y: 4, z: 5, w: 6}
-  - {x: 3, y: 5, z: 6, w: 7}
-  - {x: 3, y: 6, z: 7, w: 9}
-  - {x: 3, y: 7, z: 9, w: 8}
-  - {x: 2, y: 9, z: 8, w: 0}
-  - {x: 1, y: 8, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  _particleConnectionData:
+  - {x: 2, y: 3, z: 0.00037281713, w: 0}
+  - {x: 1, y: 2, z: 0.017401112, w: 0}
+  - {x: 0, y: 3, z: 0.006165439, w: 0}
+  - {x: 0, y: 3, z: 0.022855736, w: 0}
+  - {x: 0, y: 3, z: 0.2, w: 0}
+  - {x: 0, y: 3, z: 0.2, w: 0}
+  - {x: 1, y: 6, z: 0.016427554, w: 0}
+  - {x: 1, y: 6, z: 0.0647301, w: 0}
+  - {x: 3, y: 5, z: 0.042003497, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
@@ -246,8 +267,70 @@ MonoBehaviour:
   - {x: 0, y: 0, z: 0, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
   - {x: 0, y: 0, z: 0, w: 0}
-  _particleNodesCount: 11
-  _particleConnectionsCount: 18
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  _particleConnectionSizeData:
+  - {x: 0.0000022662573, y: 0.0100000845, z: 0.010000256, w: 0.0099998955}
+  - {x: 0.004287344, y: 0.011235926, z: 0.010174304, w: 0.009793174}
+  - {x: 0.0005781482, y: 0.010001385, z: 0.010113621, w: 0.009972399}
+  - {x: 0.00747788, y: 0.010043688, z: 0.011492226, w: 0.009653638}
+  - {x: 0.19381693, y: 0.034375824, z: 0.06241811, w: 0.012890934}
+  - {x: 0.18588108, y: 0.045200188, z: 0.06572675, w: 0.01695007}
+  - {x: 0.0010644405, y: 0.010341317, z: 0.010498651, w: 0.009814778}
+  - {x: 0.01371166, y: 0.015844611, z: 0.015368371, w: 0.007995235}
+  - {x: 0.018973615, y: 0.012010255, z: 0.0116154505, w: 0.008966145}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
+  - {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6177546924250485906
 GameObject:
   m_ObjectHideFlags: 0
@@ -276,6 +359,7 @@ Transform:
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3732663233949496708}
   m_RootOrder: 0
@@ -287,19 +371,19 @@ ParticleSystem:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6177546924250485906}
-  serializedVersion: 7
+  serializedVersion: 8
   lengthInSec: 5
   simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
+  emitterVelocityMode: 1
   looping: 1
   prewarm: 1
   playOnAwake: 1
   useUnscaledTime: 0
   autoRandomSeed: 1
-  useRigidbodyForVelocity: 1
   startDelay:
     serializedVersion: 2
     minMaxState: 0
@@ -363,7 +447,7 @@ ParticleSystem:
     startLifetime:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 6
+      scalar: 8
       minScalar: 4
       maxCurve:
         serializedVersion: 2
@@ -533,7 +617,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 3
       scalar: 1
-      minScalar: 1
+      minScalar: 0.5
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -849,6 +933,7 @@ ParticleSystem:
         m_RotationOrder: 4
     randomizeRotationDirection: 0
     maxNumParticles: 16
+    customEmitterVelocity: {x: 0, y: 0, z: 0}
     size3D: 0
     rotation3D: 0
     gravityModifier:
@@ -907,14 +992,14 @@ ParticleSystem:
   ShapeModule:
     serializedVersion: 6
     enabled: 1
-    type: 0
+    type: 10
     angle: 1
     length: 5
     boxThickness: {x: 0, y: 0, z: 0}
-    radiusThickness: 1
+    radiusThickness: 0.75
     donutRadius: 0.2
     m_Position: {x: 0, y: 0, z: 0}
-    m_Rotation: {x: 0, y: 0, z: 0}
+    m_Rotation: {x: 90, y: 0, z: 0}
     m_Scale: {x: 1, y: 1, z: 1}
     placementMode: 0
     m_MeshMaterialIndex: 0
@@ -1052,7 +1137,7 @@ ParticleSystem:
           m_RotationOrder: 4
     arc:
       value: 360
-      mode: 0
+      mode: 3
       spread: 0
       speed:
         serializedVersion: 2
@@ -1113,7 +1198,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 2
+      scalar: 0
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -1223,7 +1308,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 2
+        scalar: 4
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -1799,7 +1884,7 @@ ParticleSystem:
     flipU: 0
     flipV: 0
   VelocityModule:
-    enabled: 1
+    enabled: 0
     x:
       serializedVersion: 2
       minMaxState: 0
@@ -2993,7 +3078,7 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
   NoiseModule:
-    enabled: 1
+    enabled: 0
     strength:
       serializedVersion: 2
       minMaxState: 0
@@ -5066,6 +5151,7 @@ ParticleSystemRenderer:
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
@@ -5096,6 +5182,7 @@ ParticleSystemRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_RenderMode: 0
+  m_MeshDistribution: 0
   m_SortMode: 0
   m_MinParticleSize: 0
   m_MaxParticleSize: 0.5
@@ -5119,4 +5206,8 @@ ParticleSystemRenderer:
   m_Mesh1: {fileID: 0}
   m_Mesh2: {fileID: 0}
   m_Mesh3: {fileID: 0}
+  m_MeshWeighting: 1
+  m_MeshWeighting1: 1
+  m_MeshWeighting2: 1
+  m_MeshWeighting3: 1
   m_MaskInteraction: 0

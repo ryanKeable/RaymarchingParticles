@@ -25,8 +25,13 @@ public class RaymarchShapeBuffer : MonoBehaviour
     public Vector3 cylinderScale = new Vector3(1, 1, 1);
     public float sphereScalar = 1f;
     public float cylinderScalar = 1f;
-    public float cylinderYoffset = 1f;
+    public float cylinderYoffset = 0f;
     public float unionSmoothness = 0.125f;
+
+    private float _cylinderYoffset = 0f;
+
+    bool toggleConnectionsRender = true;
+    public bool ConnectionsRenderToggle { get => toggleConnectionsRender; }
 
 
     private void Update()
@@ -36,7 +41,24 @@ public class RaymarchShapeBuffer : MonoBehaviour
 
     public void SetRaymarchBuffer()
     {
+        ShapeProperties();
         SetShaderProps();
+    }
+
+    public void ToggleConnectionRendering()
+    {
+        toggleConnectionsRender = !toggleConnectionsRender;
+        if (!toggleConnectionsRender) renderMat.EnableKeyword("_DISABLE_CONNECTIONS");
+        else renderMat.DisableKeyword("_DISABLE_CONNECTIONS");
+    }
+
+    void ShapeProperties()
+    {
+
+        _cylinderYoffset = cylinderYoffset * sphere.localScale.x; // we can go out double the scale so we can scrub back in
+        _cylinderYoffset = Mathf.Min(_cylinderYoffset, sphere.localScale.x * 2f); // we can go out double the scale so we can scrub back in
+        _cylinderYoffset = Mathf.Max(_cylinderYoffset, 0);
+
     }
 
     void SetShaderProps()
@@ -45,10 +67,11 @@ public class RaymarchShapeBuffer : MonoBehaviour
 
         renderMat.SetVector("_Sphere", _sphere);
         renderMat.SetVector("_CylinderPos", cappedCylinder.localPosition);
-        renderMat.SetVector("_CylinderScale", cylinderScale / transform.localScale.x);
-        renderMat.SetFloat("_CylinderYOffset", cylinderYoffset);
+        renderMat.SetVector("_CylinderScale", cylinderScale);
+        renderMat.SetFloat("_CylinderYOffset", _cylinderYoffset / transform.localScale.x);
+        renderMat.SetFloat("_SphereScalar", Mathf.Max(sphereScalar, 0.0001f));
         renderMat.SetFloat("_CylinderScalar", Mathf.Max(cylinderScalar, 0.0001f));
-        renderMat.SetFloat("_Smoothness", Mathf.Max(unionSmoothness, 0.01f));
+        renderMat.SetFloat("_Smoothness", Mathf.Max(unionSmoothness, 0.0001f));
 
         renderMat.SetMatrix("_4x4Identity", Matrix4x4.identity);
     }

@@ -62,6 +62,13 @@ public class RaymarchParticleBufferEditor : Editor
         {
             theItem.Clear();
         }
+
+        string toggleKey = theItem.ConnectionsRenderToggle ? "Off" : "On";
+        if (GUILayout.Button($"Toggle Connection Rendering: {toggleKey}"))
+        {
+            theItem.ToggleConnectionRendering();
+        }
+
         base.DrawDefaultInspector();
     }
 
@@ -74,11 +81,11 @@ public class RaymarchParticleBufferEditor : Editor
         Handles.color = Color.yellow;
         // Handles.SphereHandleCap(0, Vector3.zero, Quaternion.identity, .25f, EventType.Repaint); // world centre 
 
-        for (int i = 0; i < theItem._particleNodes.Count; i++)
+        for (int i = 0; i < theItem.particleNodes.Count; i++)
         {
             int flip = i % 2;
             Handles.color = i == 0 ? Color.cyan : Color.green;
-            Handles.Label(ConvertToLocalPos(theItem._particleNodes[i].particlePosition), theItem._particleNodes[i].id.ToString());
+            Handles.Label(ConvertToLocalPos(theItem.particleNodes[i].particlePosition), theItem.particleNodes[i].id.ToString());
         }
     }
 
